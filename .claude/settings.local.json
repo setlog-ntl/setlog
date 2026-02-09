@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(npx create-next-app@latest:*)",
+      "Bash(xcopy:*)",
+      "Bash(rsync:*)",
+      "Bash(npx shadcn@latest init:*)",
+      "Bash(npx shadcn@latest add button card input label tabs dialog dropdown-menu avatar badge separator sheet toast checkbox progress textarea select accordion popover command tooltip scroll-area -y)",
+      "Bash(npx shadcn@latest add button card input label tabs dialog dropdown-menu avatar badge separator sheet sonner checkbox progress textarea select accordion popover command tooltip scroll-area -y)",
+      "Bash(npx next build:*)",
+      "Bash(powershell:*)",
+      "Bash(taskkill:*)",
+      "Bash(del \"C:\\\\Users\\\\N100274\\\\OneDrive\\\\2.PJT\\\\setlog\\\\.next\\\\dev\\\\lock\")",
+      "Bash(claude mcp add:*)",
+      "Bash(vercel:*)"
+    ]
+  }
+}
