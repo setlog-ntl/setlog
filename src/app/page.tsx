@@ -29,10 +29,10 @@ export default async function LandingPage() {
     <div className="min-h-screen flex flex-col">
       <Header profile={profile} />
 
-      {/* Section 1: Hero — Interactive Diagram */}
+      {/* Section 1: Hero — Architecture Flow Diagram */}
       <HeroSection />
 
-      {/* Section 2: Interactive Showcase (Bento Grid) */}
+      {/* Section 2: Flow Comparison + Connection Dashboard */}
       <InteractiveDemo />
 
       {/* Section 3: Core Features (Bento Grid) */}
