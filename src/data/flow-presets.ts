@@ -5,6 +5,7 @@ export interface FlowNodeDef {
   label: string;
   category: string;
   emoji: string;
+  iconSlug?: string;
   x: number;
   y: number;
   status: ConnectionStatus;
@@ -34,10 +35,10 @@ export const SIMPLE_FLOW: FlowPreset = {
   name: '간단한 흐름 (블로그)',
   description: '블로그, 포트폴리오 등 간단한 프로젝트의 서비스 연결 구조',
   nodes: [
-    { id: 'github', label: 'GitHub', category: 'cicd', emoji: '🐙', x: 50, y: 120, status: 'connected', envVars: { configured: 1, total: 1 } },
-    { id: 'nextjs', label: 'Next.js', category: 'deploy', emoji: '⚡', x: 250, y: 120, status: 'connected', envVars: { configured: 0, total: 0 } },
-    { id: 'vercel', label: 'Vercel', category: 'deploy', emoji: '🚀', x: 450, y: 60, status: 'connected', envVars: { configured: 2, total: 2 } },
-    { id: 'cloudinary', label: 'Cloudinary', category: 'storage', emoji: '☁️', x: 450, y: 180, status: 'in_progress', envVars: { configured: 1, total: 2 } },
+    { id: 'github', label: 'GitHub', category: 'cicd', emoji: '🐙', iconSlug: 'github', x: 50, y: 120, status: 'connected', envVars: { configured: 1, total: 1 } },
+    { id: 'nextjs', label: 'Next.js', category: 'deploy', emoji: '⚡', iconSlug: 'nextjs', x: 250, y: 120, status: 'connected', envVars: { configured: 0, total: 0 } },
+    { id: 'vercel', label: 'Vercel', category: 'deploy', emoji: '🚀', iconSlug: 'vercel', x: 450, y: 60, status: 'connected', envVars: { configured: 2, total: 2 } },
+    { id: 'cloudinary', label: 'Cloudinary', category: 'storage', emoji: '☁️', iconSlug: 'cloudinary', x: 450, y: 180, status: 'in_progress', envVars: { configured: 1, total: 2 } },
   ],
   edges: [
     { source: 'github', target: 'nextjs', label: 'CI/CD' },
@@ -55,18 +56,18 @@ export const COMPLEX_FLOW: FlowPreset = {
   name: '복잡한 흐름 (SaaS)',
   description: 'SaaS 애플리케이션의 복잡한 서비스 연결 구조',
   nodes: [
-    { id: 'github', label: 'GitHub', category: 'cicd', emoji: '🐙', x: 50, y: 180, status: 'connected', envVars: { configured: 1, total: 1 } },
-    { id: 'nextjs', label: 'Next.js', category: 'deploy', emoji: '⚡', x: 250, y: 120, status: 'connected', envVars: { configured: 0, total: 0 } },
-    { id: 'vercel', label: 'Vercel', category: 'deploy', emoji: '🚀', x: 250, y: 240, status: 'connected', envVars: { configured: 2, total: 2 } },
-    { id: 'sentry', label: 'Sentry', category: 'monitoring', emoji: '📊', x: 250, y: 340, status: 'connected', envVars: { configured: 1, total: 1 } },
-    { id: 'posthog', label: 'PostHog', category: 'monitoring', emoji: '📈', x: 250, y: 430, status: 'in_progress', envVars: { configured: 1, total: 2 } },
-    { id: 'backend', label: 'Backend API', category: 'other', emoji: '🔧', x: 470, y: 180, status: 'connected', envVars: { configured: 0, total: 0 } },
-    { id: 'supabase', label: 'Supabase', category: 'database', emoji: '🗄️', x: 690, y: 60, status: 'connected', envVars: { configured: 3, total: 3 } },
-    { id: 'clerk', label: 'Clerk', category: 'auth', emoji: '🔐', x: 690, y: 160, status: 'in_progress', envVars: { configured: 2, total: 4 } },
-    { id: 's3', label: 'S3', category: 'storage', emoji: '☁️', x: 690, y: 260, status: 'not_started', envVars: { configured: 0, total: 3 } },
-    { id: 'stripe', label: 'Stripe', category: 'payment', emoji: '💳', x: 690, y: 360, status: 'not_started', envVars: { configured: 0, total: 3 } },
-    { id: 'openai', label: 'OpenAI', category: 'ai', emoji: '🤖', x: 900, y: 110, status: 'not_started', envVars: { configured: 0, total: 1 } },
-    { id: 'resend', label: 'Resend', category: 'email', emoji: '📧', x: 900, y: 260, status: 'in_progress', envVars: { configured: 1, total: 2 } },
+    { id: 'github', label: 'GitHub', category: 'cicd', emoji: '🐙', iconSlug: 'github', x: 50, y: 180, status: 'connected', envVars: { configured: 1, total: 1 } },
+    { id: 'nextjs', label: 'Next.js', category: 'deploy', emoji: '⚡', iconSlug: 'nextjs', x: 250, y: 120, status: 'connected', envVars: { configured: 0, total: 0 } },
+    { id: 'vercel', label: 'Vercel', category: 'deploy', emoji: '🚀', iconSlug: 'vercel', x: 250, y: 240, status: 'connected', envVars: { configured: 2, total: 2 } },
+    { id: 'sentry', label: 'Sentry', category: 'monitoring', emoji: '📊', iconSlug: 'sentry', x: 250, y: 340, status: 'connected', envVars: { configured: 1, total: 1 } },
+    { id: 'posthog', label: 'PostHog', category: 'monitoring', emoji: '📈', iconSlug: 'posthog', x: 250, y: 430, status: 'in_progress', envVars: { configured: 1, total: 2 } },
+    { id: 'backend', label: 'Backend API', category: 'other', emoji: '🔧', iconSlug: 'backend', x: 470, y: 180, status: 'connected', envVars: { configured: 0, total: 0 } },
+    { id: 'supabase', label: 'Supabase', category: 'database', emoji: '🗄️', iconSlug: 'supabase', x: 690, y: 60, status: 'connected', envVars: { configured: 3, total: 3 } },
+    { id: 'clerk', label: 'Clerk', category: 'auth', emoji: '🔐', iconSlug: 'clerk', x: 690, y: 160, status: 'in_progress', envVars: { configured: 2, total: 4 } },
+    { id: 's3', label: 'S3', category: 'storage', emoji: '☁️', iconSlug: 's3', x: 690, y: 260, status: 'not_started', envVars: { configured: 0, total: 3 } },
+    { id: 'stripe', label: 'Stripe', category: 'payment', emoji: '💳', iconSlug: 'stripe', x: 690, y: 360, status: 'not_started', envVars: { configured: 0, total: 3 } },
+    { id: 'openai', label: 'OpenAI', category: 'ai', emoji: '🤖', iconSlug: 'openai', x: 900, y: 110, status: 'not_started', envVars: { configured: 0, total: 1 } },
+    { id: 'resend', label: 'Resend', category: 'email', emoji: '📧', iconSlug: 'resend', x: 900, y: 260, status: 'in_progress', envVars: { configured: 1, total: 2 } },
   ],
   edges: [
     { source: 'github', target: 'nextjs', label: 'CI/CD' },
@@ -93,22 +94,22 @@ export const HERO_FLOW: FlowPreset = {
   description: '전형적인 SaaS 아키텍처 흐름',
   nodes: [
     // Source
-    { id: 'github', label: 'GitHub', category: 'cicd', emoji: '🐙', x: 50, y: 200, status: 'connected', envVars: { configured: 1, total: 1 } },
+    { id: 'github', label: 'GitHub', category: 'cicd', emoji: '🐙', iconSlug: 'github', x: 50, y: 200, status: 'connected', envVars: { configured: 1, total: 1 } },
     // Frontend
-    { id: 'nextjs', label: 'Next.js', category: 'deploy', emoji: '⚡', x: 280, y: 130, status: 'connected', envVars: { configured: 2, total: 2 } },
-    { id: 'vercel', label: 'Vercel', category: 'deploy', emoji: '🚀', x: 280, y: 250, status: 'connected', envVars: { configured: 2, total: 2 } },
-    { id: 'sentry', label: 'Sentry', category: 'monitoring', emoji: '📊', x: 280, y: 350, status: 'connected', envVars: { configured: 1, total: 1 } },
-    { id: 'posthog', label: 'PostHog', category: 'monitoring', emoji: '📈', x: 280, y: 440, status: 'in_progress', envVars: { configured: 1, total: 2 } },
+    { id: 'nextjs', label: 'Next.js', category: 'deploy', emoji: '⚡', iconSlug: 'nextjs', x: 280, y: 130, status: 'connected', envVars: { configured: 2, total: 2 } },
+    { id: 'vercel', label: 'Vercel', category: 'deploy', emoji: '🚀', iconSlug: 'vercel', x: 280, y: 250, status: 'connected', envVars: { configured: 2, total: 2 } },
+    { id: 'sentry', label: 'Sentry', category: 'monitoring', emoji: '📊', iconSlug: 'sentry', x: 280, y: 350, status: 'connected', envVars: { configured: 1, total: 1 } },
+    { id: 'posthog', label: 'PostHog', category: 'monitoring', emoji: '📈', iconSlug: 'posthog', x: 280, y: 440, status: 'in_progress', envVars: { configured: 1, total: 2 } },
     // Backend
-    { id: 'backend', label: 'Backend API', category: 'other', emoji: '🔧', x: 510, y: 200, status: 'connected', envVars: { configured: 0, total: 0 } },
+    { id: 'backend', label: 'Backend API', category: 'other', emoji: '🔧', iconSlug: 'backend', x: 510, y: 200, status: 'connected', envVars: { configured: 0, total: 0 } },
     // Database / Auth / Storage
-    { id: 'supabase', label: 'Supabase', category: 'database', emoji: '🗄️', x: 740, y: 100, status: 'connected', envVars: { configured: 3, total: 3 } },
-    { id: 'clerk', label: 'Clerk', category: 'auth', emoji: '🔐', x: 740, y: 220, status: 'in_progress', envVars: { configured: 2, total: 4 } },
-    { id: 's3', label: 'S3', category: 'storage', emoji: '☁️', x: 740, y: 330, status: 'not_started', envVars: { configured: 0, total: 3 } },
+    { id: 'supabase', label: 'Supabase', category: 'database', emoji: '🗄️', iconSlug: 'supabase', x: 740, y: 100, status: 'connected', envVars: { configured: 3, total: 3 } },
+    { id: 'clerk', label: 'Clerk', category: 'auth', emoji: '🔐', iconSlug: 'clerk', x: 740, y: 220, status: 'in_progress', envVars: { configured: 2, total: 4 } },
+    { id: 's3', label: 'S3', category: 'storage', emoji: '☁️', iconSlug: 's3', x: 740, y: 330, status: 'not_started', envVars: { configured: 0, total: 3 } },
     // External Services
-    { id: 'stripe', label: 'Stripe', category: 'payment', emoji: '💳', x: 970, y: 100, status: 'not_started', envVars: { configured: 0, total: 3 } },
-    { id: 'openai', label: 'OpenAI', category: 'ai', emoji: '🤖', x: 970, y: 220, status: 'not_started', envVars: { configured: 0, total: 1 } },
-    { id: 'resend', label: 'Resend', category: 'email', emoji: '📧', x: 970, y: 330, status: 'in_progress', envVars: { configured: 1, total: 2 } },
+    { id: 'stripe', label: 'Stripe', category: 'payment', emoji: '💳', iconSlug: 'stripe', x: 970, y: 100, status: 'not_started', envVars: { configured: 0, total: 3 } },
+    { id: 'openai', label: 'OpenAI', category: 'ai', emoji: '🤖', iconSlug: 'openai', x: 970, y: 220, status: 'not_started', envVars: { configured: 0, total: 1 } },
+    { id: 'resend', label: 'Resend', category: 'email', emoji: '📧', iconSlug: 'resend', x: 970, y: 330, status: 'in_progress', envVars: { configured: 1, total: 2 } },
   ],
   edges: [
     { source: 'github', target: 'nextjs', label: 'CI/CD' },

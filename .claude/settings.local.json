@@ -14,7 +14,10 @@
       "Bash(del \"C:\\\\Users\\\\N100274\\\\OneDrive\\\\2.PJT\\\\setlog\\\\.next\\\\dev\\\\lock\")",
       "Bash(claude mcp add:*)",
       "Bash(vercel:*)",
-      "Bash(npm run test:*)"
+      "Bash(npm run test:*)",
+      "WebFetch(domain:simpleicons.org)",
+      "WebFetch(domain:cdn.simpleicons.org)",
+      "WebFetch(domain:www.npmjs.com)"
     ]
   }
 }

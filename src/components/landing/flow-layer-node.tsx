@@ -2,6 +2,7 @@
 
 import { memo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { ServiceIcon } from './service-icon';
 
 const layerColors: Record<string, { bg: string; border: string; text: string }> = {
   source: {
@@ -29,6 +30,7 @@ const layerColors: Record<string, { bg: string; border: string; text: string }> 
 interface FlowLayerNodeData {
   label: string;
   emoji: string;
+  iconSlug?: string;
   layer: string;
   connectedCount?: number;
   totalCount?: number;
@@ -53,7 +55,13 @@ function FlowLayerNode({ data }: NodeProps) {
       <Handle type="source" position={Position.Right} className="!bg-gray-400 !w-2 !h-2 !border-0 dark:!bg-gray-500" />
 
       <div className="text-center">
-        <div className="text-xl mb-1">{d.emoji}</div>
+        <div className="flex justify-center mb-1">
+          {d.iconSlug ? (
+            <ServiceIcon serviceId={d.iconSlug} size={24} />
+          ) : (
+            <span className="text-xl">{d.emoji}</span>
+          )}
+        </div>
         <div className={`font-bold text-sm ${colors.text}`}>{d.label}</div>
         {d.totalCount != null && d.totalCount > 0 && (
           <div className="mt-1.5 space-y-0.5">

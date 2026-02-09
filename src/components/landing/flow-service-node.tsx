@@ -2,6 +2,7 @@
 
 import { memo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { ServiceIcon } from './service-icon';
 
 const categoryColors: Record<string, string> = {
   auth: 'bg-purple-50 border-purple-200 dark:bg-purple-950/50 dark:border-purple-800',
@@ -26,6 +27,7 @@ interface FlowServiceNodeData {
   label: string;
   category: string;
   emoji: string;
+  iconSlug?: string;
   status: string;
   envConfigured?: number;
   envTotal?: number;
@@ -51,7 +53,11 @@ function FlowServiceNode({ data }: NodeProps) {
 
       <div className="flex items-center gap-2">
         <span className={`w-2 h-2 rounded-full shrink-0 ${dotClass}`} />
-        <span className="text-base">{d.emoji}</span>
+        {d.iconSlug ? (
+          <ServiceIcon serviceId={d.iconSlug} size={18} />
+        ) : (
+          <span className="text-base">{d.emoji}</span>
+        )}
         <span className="font-medium text-xs whitespace-nowrap">{d.label}</span>
       </div>
       {d.envTotal != null && d.envTotal > 0 && (

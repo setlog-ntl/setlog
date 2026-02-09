@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from './status-badge';
+import { ServiceIcon } from './service-icon';
 import { MOCK_CONNECTIONS } from '@/data/mock-connections';
 
 function ProgressBar({ value, max, color }: { value: number; max: number; color: string }) {
@@ -88,7 +89,11 @@ export function ConnectionDashboard() {
               >
                 <td className="px-4 py-2.5">
                   <span className="flex items-center gap-2 font-medium text-xs">
-                    <span>{conn.emoji}</span>
+                    {conn.iconSlug ? (
+                      <ServiceIcon serviceId={conn.iconSlug} size={18} />
+                    ) : (
+                      <span>{conn.emoji}</span>
+                    )}
                     {conn.name}
                   </span>
                 </td>

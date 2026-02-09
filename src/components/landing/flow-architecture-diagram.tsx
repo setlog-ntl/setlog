@@ -46,6 +46,7 @@ function buildNodes(highlightedNodeIds: Set<string>): Node[] {
         ? {
             label: n.label,
             emoji: n.emoji,
+            iconSlug: n.iconSlug,
             layer: n.id === 'nextjs' ? 'frontend' : n.id === 'backend' ? 'backend' : 'source',
             highlighted: highlightedNodeIds.has(n.id),
           }
@@ -53,6 +54,7 @@ function buildNodes(highlightedNodeIds: Set<string>): Node[] {
             label: n.label,
             category: n.category,
             emoji: n.emoji,
+            iconSlug: n.iconSlug,
             status: n.status,
             envConfigured: n.envVars.configured,
             envTotal: n.envVars.total,
