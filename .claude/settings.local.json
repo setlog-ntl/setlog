@@ -41,7 +41,10 @@
       "mcp__supabase__execute_sql",
       "mcp__supabase__apply_migration",
       "mcp__supabase__get_advisors",
-      "mcp__supabase__search_docs"
+      "mcp__supabase__search_docs",
+      "Bash(timeout:*)",
+      "Bash(curl:*)",
+      "Bash(npx tsx:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
