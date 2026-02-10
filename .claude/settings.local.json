@@ -33,7 +33,9 @@
       "Bash(git push:*)",
       "Bash(npx tsc:*)",
       "Bash(npm run build:*)",
-      "Bash(npx vitest:*)"
+      "Bash(npx vitest:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: Phase 3 - 통합 모니터링 대시보드 구현 및 품질 개선\n\n- 상태 모니터링 전용 페이지 \\(/project/[id]/health\\)\n- 프로젝트 개요에 서비스 건강 상태 카드 그리드 추가\n- 서비스맵 디테일 시트에 검증 실행 버튼 + 최근 5건 이력\n- Health sparkline/timeline 컴포넌트\n- useLatestHealthChecks 훅으로 페이지 로드 시 기존 데이터 표시\n- per-service isRunning 추적, rate limit 20회/분, 접근성 개선\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: Phase 4 - 쉬운 설정 마법사 구현 및 보안 강화\n\n- 5단계 서비스 연결 마법사 \\(setup-wizard.tsx\\)\n- .env 파일 일괄 임포트 \\(env-import-dialog.tsx\\)\n- Bulk env API with rate limiting, encryption, audit logging\n- 스마트 서비스 제안 \\(env key ↔ 카탈로그 매칭\\)\n- 보안: 응답에서 암호문 제거, 중복 키 감지, JSON 파싱 에러 처리\n- UX: 시크릿 값 마스킹, 쿼리 무효화, 빈 값 검증 차단\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   },
   "enableAllProjectMcpServers": true,
