@@ -59,6 +59,9 @@ const S = {
   cypress: '10000000-0000-4000-a000-000000000048',
   bullmq: '10000000-0000-4000-a000-000000000049',
   shopify_api: '10000000-0000-4000-a000-000000000050',
+  github: '10000000-0000-4000-a000-000000000051',
+  claude_code: '10000000-0000-4000-a000-000000000052',
+  google_gemini: '10000000-0000-4000-a000-000000000053',
 } as const;
 
 export const dependencies: DependencySeed[] = [
@@ -136,4 +139,14 @@ export const dependencies: DependencySeed[] = [
   { service_id: S.strapi, depends_on_service_id: S.cloudinary, dependency_type: 'recommended', description: 'Use Cloudinary for media management with Strapi', description_ko: 'Strapi에서 미디어 관리를 위해 Cloudinary를 사용합니다' },
 
   { service_id: S.slack_api, depends_on_service_id: S.sentry, dependency_type: 'optional', description: 'Send Sentry alerts to Slack channels', description_ko: 'Sentry 알림을 Slack 채널로 전송합니다' },
+
+  // --- New services: Claude Code, Google Gemini, GitHub ---
+  { service_id: S.claude_code, depends_on_service_id: S.openai, dependency_type: 'alternative', description: 'OpenAI is an alternative AI coding provider', description_ko: 'OpenAI는 대안 AI 코딩 제공자입니다' },
+  { service_id: S.claude_code, depends_on_service_id: S.anthropic, dependency_type: 'alternative', description: 'Anthropic Claude API is an alternative to Claude Code', description_ko: 'Anthropic Claude API는 Claude Code의 대안입니다' },
+  { service_id: S.claude_code, depends_on_service_id: S.groq, dependency_type: 'alternative', description: 'Groq offers fast LLM inference as an alternative', description_ko: 'Groq는 빠른 LLM 추론을 대안으로 제공합니다' },
+
+  { service_id: S.google_gemini, depends_on_service_id: S.openai, dependency_type: 'alternative', description: 'OpenAI is an alternative LLM provider', description_ko: 'OpenAI는 대안 LLM 제공자입니다' },
+  { service_id: S.google_gemini, depends_on_service_id: S.anthropic, dependency_type: 'alternative', description: 'Anthropic is an alternative LLM provider', description_ko: 'Anthropic은 대안 LLM 제공자입니다' },
+
+  { service_id: S.github, depends_on_service_id: S.vercel, dependency_type: 'recommended', description: 'GitHub integrates with Vercel for automatic deployments', description_ko: 'GitHub는 Vercel과 자동 배포를 위해 연동됩니다' },
 ];

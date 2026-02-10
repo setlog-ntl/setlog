@@ -68,6 +68,39 @@ const SERVICE_IDS = {
   uploadthing: '10000000-0000-4000-a000-000000000018',
   posthog: '10000000-0000-4000-a000-000000000019',
   awss3: '10000000-0000-4000-a000-000000000020',
+  github_actions: '10000000-0000-4000-a000-000000000021',
+  twilio: '10000000-0000-4000-a000-000000000022',
+  onesignal: '10000000-0000-4000-a000-000000000023',
+  algolia: '10000000-0000-4000-a000-000000000024',
+  sanity: '10000000-0000-4000-a000-000000000025',
+  ga4: '10000000-0000-4000-a000-000000000026',
+  upstash_redis: '10000000-0000-4000-a000-000000000027',
+  cloudflare: '10000000-0000-4000-a000-000000000028',
+  fly_io: '10000000-0000-4000-a000-000000000029',
+  datadog: '10000000-0000-4000-a000-000000000030',
+  mixpanel: '10000000-0000-4000-a000-000000000031',
+  contentful: '10000000-0000-4000-a000-000000000032',
+  meilisearch: '10000000-0000-4000-a000-000000000033',
+  pusher: '10000000-0000-4000-a000-000000000034',
+  trigger_dev: '10000000-0000-4000-a000-000000000035',
+  launchdarkly: '10000000-0000-4000-a000-000000000036',
+  groq: '10000000-0000-4000-a000-000000000037',
+  render: '10000000-0000-4000-a000-000000000038',
+  logrocket: '10000000-0000-4000-a000-000000000039',
+  playwright: '10000000-0000-4000-a000-000000000040',
+  slack_api: '10000000-0000-4000-a000-000000000041',
+  discord_api: '10000000-0000-4000-a000-000000000042',
+  mapbox: '10000000-0000-4000-a000-000000000043',
+  elevenlabs: '10000000-0000-4000-a000-000000000044',
+  inngest: '10000000-0000-4000-a000-000000000045',
+  strapi: '10000000-0000-4000-a000-000000000046',
+  plausible: '10000000-0000-4000-a000-000000000047',
+  cypress: '10000000-0000-4000-a000-000000000048',
+  bullmq: '10000000-0000-4000-a000-000000000049',
+  shopify_api: '10000000-0000-4000-a000-000000000050',
+  github: '10000000-0000-4000-a000-000000000051',
+  claude_code: '10000000-0000-4000-a000-000000000052',
+  google_gemini: '10000000-0000-4000-a000-000000000053',
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -1290,6 +1323,166 @@ export const services: ServiceSeed[] = [
     setup_time_minutes: 20,
     monthly_cost_estimate: { starter: '$0-5', growth: '$20-100', enterprise: '$500+' },
     dx_score: 7.0,
+  },
+
+  // -----------------------------------------------------------------------
+  // 21. GitHub
+  // -----------------------------------------------------------------------
+  {
+    id: SERVICE_IDS.github,
+    name: 'GitHub',
+    slug: 'github',
+    category: 'cicd',
+    description:
+      'Git-based source code hosting with pull requests, Actions CI/CD, issue tracking, and the world\'s largest developer community.',
+    description_ko:
+      'Git 기반 소스 코드 호스팅으로 풀 리퀘스트, Actions CI/CD, 이슈 트래킹, 세계 최대 개발자 커뮤니티를 제공합니다.',
+    icon_url: null,
+    website_url: 'https://github.com',
+    docs_url: 'https://docs.github.com',
+    pricing_info: {
+      free_tier: true,
+      free_tier_details: 'Free: 무제한 퍼블릭 리포, 프라이빗 리포, Actions 2,000분/월',
+      plans: [
+        { name: 'Free', price: '$0/월' },
+        { name: 'Team', price: '$4/사용자/월' },
+        { name: 'Enterprise', price: '$21/사용자/월' },
+      ],
+    },
+    required_env_vars: [
+      {
+        name: 'GITHUB_TOKEN',
+        public: false,
+        description: 'GitHub Personal Access Token',
+        description_ko: 'GitHub 개인 액세스 토큰',
+      },
+      {
+        name: 'GITHUB_CLIENT_ID',
+        public: false,
+        description: 'GitHub OAuth App Client ID',
+        description_ko: 'GitHub OAuth 앱 클라이언트 ID',
+      },
+      {
+        name: 'GITHUB_CLIENT_SECRET',
+        public: false,
+        description: 'GitHub OAuth App Client Secret',
+        description_ko: 'GitHub OAuth 앱 클라이언트 시크릿',
+      },
+    ],
+    domain: 'devtools',
+    subcategory: 'version_control',
+    popularity_score: 98,
+    difficulty_level: 'beginner',
+    tags: ['git', 'ci/cd', 'version-control', 'actions', 'open-source', 'devtools'],
+    alternatives: ['gitlab', 'bitbucket'],
+    compatibility: {
+      framework: ['nextjs', 'react', 'vue', 'svelte', 'angular', 'express'],
+      language: ['typescript', 'javascript', 'python', 'go', 'rust', 'java', 'ruby'],
+    },
+    official_sdks: { npm: 'https://www.npmjs.com/package/@octokit/rest' },
+    free_tier_quality: 'excellent',
+    vendor_lock_in_risk: 'low',
+    setup_time_minutes: 5,
+    monthly_cost_estimate: { starter: '$0', growth: '$4/사용자', enterprise: '$21/사용자' },
+    dx_score: 9.5,
+  },
+
+  // -----------------------------------------------------------------------
+  // 22. Claude Code
+  // -----------------------------------------------------------------------
+  {
+    id: SERVICE_IDS.claude_code,
+    name: 'Claude Code',
+    slug: 'claude-code',
+    category: 'ai',
+    description:
+      'Anthropic\'s agentic coding tool for CLI. Understands codebases, edits files, runs commands, and assists with complex software engineering tasks.',
+    description_ko:
+      'Anthropic의 에이전트형 코딩 도구로, CLI에서 코드베이스를 이해하고 파일 편집, 명령 실행, 복잡한 소프트웨어 엔지니어링 작업을 지원합니다.',
+    icon_url: null,
+    website_url: 'https://claude.ai/claude-code',
+    docs_url: 'https://docs.anthropic.com/en/docs/claude-code',
+    pricing_info: {
+      free_tier: false,
+      free_tier_details: 'Anthropic API 사용량 기반 과금',
+      plans: [
+        { name: 'API 기반', price: '사용량 기반' },
+        { name: 'Max 플랜', price: '$100/월~' },
+      ],
+    },
+    required_env_vars: [
+      {
+        name: 'ANTHROPIC_API_KEY',
+        public: false,
+        description: 'Anthropic API Key for Claude',
+        description_ko: 'Claude용 Anthropic API 키',
+      },
+    ],
+    domain: 'ai_ml',
+    subcategory: 'code_assistant',
+    popularity_score: 88,
+    difficulty_level: 'beginner',
+    tags: ['ai', 'coding-assistant', 'cli', 'agent', 'anthropic', 'claude'],
+    alternatives: ['github-copilot', 'cursor'],
+    compatibility: {
+      framework: ['nextjs', 'react', 'vue', 'svelte', 'express', 'django', 'rails'],
+      language: ['typescript', 'javascript', 'python', 'go', 'rust', 'java', 'ruby', 'c#'],
+    },
+    official_sdks: { npm: 'https://www.npmjs.com/package/@anthropic-ai/sdk' },
+    free_tier_quality: 'none',
+    vendor_lock_in_risk: 'low',
+    setup_time_minutes: 5,
+    monthly_cost_estimate: { starter: '$20', growth: '$100', enterprise: '$200+' },
+    dx_score: 9.3,
+  },
+
+  // -----------------------------------------------------------------------
+  // 23. Google Gemini
+  // -----------------------------------------------------------------------
+  {
+    id: SERVICE_IDS.google_gemini,
+    name: 'Google Gemini',
+    slug: 'google-gemini',
+    category: 'ai',
+    description:
+      'Google\'s multimodal AI model family supporting text, image, audio, and video understanding with generous free tier and competitive pricing.',
+    description_ko:
+      'Google의 멀티모달 AI 모델로, 텍스트·이미지·오디오·비디오를 이해하며 넉넉한 무료 티어와 경쟁력 있는 가격을 제공합니다.',
+    icon_url: null,
+    website_url: 'https://ai.google.dev',
+    docs_url: 'https://ai.google.dev/docs',
+    pricing_info: {
+      free_tier: true,
+      free_tier_details: 'Free: 15 RPM, 1,500 일일 요청, 1M 토큰 컨텍스트',
+      plans: [
+        { name: 'Free', price: '$0/월' },
+        { name: 'Pay-as-you-go', price: '사용량 기반' },
+      ],
+    },
+    required_env_vars: [
+      {
+        name: 'GOOGLE_GEMINI_API_KEY',
+        public: false,
+        description: 'Google Gemini API Key',
+        description_ko: 'Google Gemini API 키',
+      },
+    ],
+    domain: 'ai_ml',
+    subcategory: 'multimodal_ai',
+    popularity_score: 85,
+    difficulty_level: 'beginner',
+    tags: ['ai', 'multimodal', 'google', 'llm', 'vision', 'gemini'],
+    alternatives: ['openai', 'anthropic'],
+    compatibility: {
+      framework: ['nextjs', 'react', 'vue', 'express', 'flask', 'django'],
+      language: ['typescript', 'javascript', 'python', 'go', 'java', 'kotlin', 'swift'],
+    },
+    official_sdks: { npm: 'https://www.npmjs.com/package/@google/generative-ai' },
+    free_tier_quality: 'excellent',
+    vendor_lock_in_risk: 'low',
+    setup_time_minutes: 5,
+    monthly_cost_estimate: { starter: '$0', growth: '$10-50', enterprise: '$100+' },
+    dx_score: 8.5,
   },
 ];
 

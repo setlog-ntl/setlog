@@ -42,7 +42,7 @@ export default async function ServicesPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold">서비스 카탈로그</h1>
           <p className="text-muted-foreground mt-1">
-            바이브 코딩에 필요한 서비스들을 둘러보세요
+            내 프로젝트에 필요한 서비스를 쉽게 찾아 연결하세요
           </p>
         </div>
         <ServiceCatalogClient services={services} domains={domains} />

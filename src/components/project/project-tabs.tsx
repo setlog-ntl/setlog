@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Map, List, Key, Settings } from 'lucide-react';
+import { LayoutDashboard, Map, List, Key, Settings, ScrollText } from 'lucide-react';
 
 interface ProjectTabsProps {
   projectId: string;
@@ -14,6 +14,7 @@ const tabs = [
   { label: '서비스 맵', href: '/service-map', icon: Map },
   { label: '서비스 목록', href: '/services', icon: List },
   { label: '환경변수', href: '/env', icon: Key },
+  { label: '감사 로그', href: '/audit', icon: ScrollText },
   { label: '설정', href: '/settings', icon: Settings },
 ];
 

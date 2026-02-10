@@ -1,0 +1,15 @@
+---
+description: API·DB 보안 및 시크릿 관리 원칙 (민감 API, 암호화, 감사)
+globs: "**/api/**/*.ts, **/lib/crypto/**/*.ts, **/lib/audit.ts, **/lib/rate-limit.ts"
+alwaysApply: true
+---
+
+# Linkmap 보안 규칙
+
+- **인증**: 모든 민감 API(env, projects, teams, tokens)는 `supabase.auth.getUser()`로 사용자 확인 후 처리. 미인증 시 `unauthorizedError()` 반환.
+- **입력 검증**: API 바디·쿼리는 반드시 Zod 스키마로 검증. `safeParse` 실패 시 `validationError(parsed.error)` 사용.
+- **Rate limit**: env 생성/수정/삭제/복호화 API에는 `rateLimit(\`env:${user.id}\`, 30)` 적용. 실패 시 429와 안내 메시지 반환.
+- **감사 로그**: env_var create/update/delete/decrypt, project create/update/delete 수행 후 `logAudit(userId, { action, resourceType, resourceId?, details?, ipAddress? })` 호출.
+- **암호화**: `ENCRYPTION_KEY`는 64자 hex(32 bytes). 서버 전용. 환경변수 값은 `@/lib/crypto` encrypt 후 DB 저장. 평문 시크릿을 DB·로그·클라이언트에 두지 말 것.
+- **Service role**: `SUPABASE_SERVICE_ROLE_KEY`는 서버에서만 사용. 감사 로그 삽입은 `createAdminClient()` from `@/lib/supabase/admin` 사용. 클라이언트 번들·NEXT_PUBLIC_*에 포함 금지.
+- **에러 노출**: 프로덕션에서 DB/내부 에러 메시지를 그대로 반환하지 말고 `apiError()` 등으로 메시지 정제.

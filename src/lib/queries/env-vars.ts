@@ -47,6 +47,46 @@ export function useAddEnvVar(projectId: string) {
   });
 }
 
+export function useDecryptEnvVar() {
+  return useMutation({
+    mutationFn: async (id: string): Promise<string> => {
+      const res = await fetch('/api/env/decrypt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) throw new Error('복호화 실패');
+      const data = await res.json();
+      return data.value;
+    },
+  });
+}
+
+export function useUpdateEnvVar(projectId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (vars: {
+      id: string;
+      key_name?: string;
+      value?: string;
+      is_secret?: boolean;
+      description?: string | null;
+    }) => {
+      const res = await fetch('/api/env', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(vars),
+      });
+      if (!res.ok) throw new Error('환경변수 수정 실패');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.envVars.byProject(projectId) });
+    },
+  });
+}
+
 export function useDeleteEnvVar(projectId: string) {
   const queryClient = useQueryClient();
 

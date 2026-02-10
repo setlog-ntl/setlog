@@ -1,0 +1,14 @@
+---
+description: Supabase·RLS·마이그레이션 규칙
+globs: "supabase/migrations/**/*.sql, **/lib/supabase/**/*.ts"
+alwaysApply: false
+---
+
+# Linkmap 데이터베이스 규칙
+
+- **마이그레이션**: 새 스키마/컬럼은 `supabase/migrations/`에 번호 붙인 새 SQL 파일로 추가(예: 007_xxx.sql). 기존 마이그레이션 파일 내용 수정 금지.
+- **RLS**: 새 테이블은 생성 직후 `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` 및 정책 정의. "일단 RLS 끄고 테스트" 금지. 정책은 소유자/팀 멤버십 기반으로만 접근 허용.
+- **인덱스**: `project_id`, `user_id`, `(resource_type, resource_id)` 등 조회 조건에 맞춰 마이그레이션에 인덱스 포함.
+- **민감 데이터**: 비밀/API키/토큰은 DB에 평문 저장 금지. 앱 레이어에서 암호화 후 저장(예: environment_variables.encrypted_value).
+- **Supabase 클라이언트**: 페이지/API는 세션 기반 `createClient()` from `@/lib/supabase/server`(anon key + 쿠키). 클라이언트 컴포넌트는 `@/lib/supabase/client`. RLS 우회가 필요한 최소 범위(감사 로그 삽입 등)만 `createAdminClient()` from `@/lib/supabase/admin`(service role) 사용.
+- **SECURITY DEFINER**: 함수는 필요한 경우만 사용하고, 역할 최소 권한 유지. Raw SQL 사용 시 파라미터 바인딩 필수.

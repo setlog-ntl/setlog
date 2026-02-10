@@ -1,13 +1,18 @@
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export type AuditAction =
   | 'env_var.create'
   | 'env_var.update'
   | 'env_var.delete'
   | 'env_var.decrypt'
+  | 'env_var.bulk_create'
   | 'project.create'
   | 'project.update'
-  | 'project.delete';
+  | 'project.delete'
+  | 'connection.create'
+  | 'connection.update'
+  | 'connection.delete'
+  | 'service.health_check';
 
 interface AuditLogEntry {
   action: AuditAction;
@@ -19,7 +24,7 @@ interface AuditLogEntry {
 
 export async function logAudit(userId: string, entry: AuditLogEntry) {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     await supabase.from('audit_logs').insert({
       user_id: userId,
       action: entry.action,

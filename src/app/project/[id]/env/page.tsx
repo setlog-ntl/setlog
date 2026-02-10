@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import { useEnvVars, useAddEnvVar, useDeleteEnvVar } from '@/lib/queries/env-vars';
+import { useEnvVars, useAddEnvVar, useDeleteEnvVar, useDecryptEnvVar, useUpdateEnvVar } from '@/lib/queries/env-vars';
+import { useProjectServices } from '@/lib/queries/services';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,8 +20,8 @@ import {
 } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Download, Plus, Trash2, Eye, EyeOff } from 'lucide-react';
-import type { Environment } from '@/types';
+import { Download, Plus, Trash2, Eye, EyeOff, Pencil } from 'lucide-react';
+import type { Environment, EnvironmentVariable } from '@/types';
 
 const envLabels: Record<Environment, string> = {
   development: '개발',
@@ -32,18 +33,36 @@ export default function ProjectEnvPage() {
   const params = useParams();
   const projectId = params.id as string;
   const { data: envVars = [], isLoading } = useEnvVars(projectId);
+  const { data: projectServices = [] } = useProjectServices(projectId);
   const addEnvVar = useAddEnvVar(projectId);
   const deleteEnvVar = useDeleteEnvVar(projectId);
+  const decryptEnvVar = useDecryptEnvVar();
+  const updateEnvVar = useUpdateEnvVar(projectId);
 
   const [activeEnv, setActiveEnv] = useState<Environment>('development');
+  const [decryptedValues, setDecryptedValues] = useState<Record<string, string>>({});
   const [showValues, setShowValues] = useState<Record<string, boolean>>({});
   const [addOpen, setAddOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<EnvironmentVariable | null>(null);
   const [newKey, setNewKey] = useState('');
   const [newValue, setNewValue] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [newIsSecret, setNewIsSecret] = useState(true);
+  const [editKey, setEditKey] = useState('');
+  const [editValue, setEditValue] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+  const [editIsSecret, setEditIsSecret] = useState(true);
 
   const filteredVars = envVars.filter((v) => v.environment === activeEnv);
+
+  // Build service_id → service name map
+  const serviceNameMap = new Map<string, string>();
+  for (const ps of projectServices) {
+    if (ps.service) {
+      serviceNameMap.set(ps.service_id, ps.service.name);
+    }
+  }
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,12 +92,71 @@ export default function ProjectEnvPage() {
     window.open(`/api/env/download?project_id=${projectId}&environment=${activeEnv}`, '_blank');
   };
 
-  const toggleShowValue = (id: string) => {
-    setShowValues((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
+  const toggleShowValue = useCallback(async (id: string) => {
+    const isCurrentlyShowing = showValues[id];
+    if (isCurrentlyShowing) {
+      setShowValues((prev) => ({ ...prev, [id]: false }));
+      setDecryptedValues((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      return;
+    }
+
+    // Decrypt the value via API
+    try {
+      const value = await decryptEnvVar.mutateAsync(id);
+      setDecryptedValues((prev) => ({ ...prev, [id]: value }));
+      setShowValues((prev) => ({ ...prev, [id]: true }));
+    } catch {
+      // silently fail - user can retry
+    }
+  }, [showValues, decryptEnvVar]);
 
   const maskValue = (value: string) => {
     return '•'.repeat(Math.min(value.length || 20, 30));
+  };
+
+  const openEditDialog = async (envVar: EnvironmentVariable) => {
+    setEditTarget(envVar);
+    setEditKey(envVar.key_name);
+    setEditDesc(envVar.description || '');
+    setEditIsSecret(envVar.is_secret);
+    setEditValue('');
+
+    // Pre-decrypt the current value for editing
+    try {
+      const value = await decryptEnvVar.mutateAsync(envVar.id);
+      setEditValue(value);
+    } catch {
+      setEditValue('');
+    }
+    setEditOpen(true);
+  };
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editTarget) return;
+
+    await updateEnvVar.mutateAsync({
+      id: editTarget.id,
+      key_name: editKey.trim() || undefined,
+      value: editValue || undefined,
+      is_secret: editIsSecret,
+      description: editDesc.trim() || null,
+    });
+
+    // Clear decrypted cache for this var since it changed
+    setDecryptedValues((prev) => {
+      const next = { ...prev };
+      delete next[editTarget.id];
+      return next;
+    });
+    setShowValues((prev) => ({ ...prev, [editTarget.id]: false }));
+
+    setEditOpen(false);
+    setEditTarget(null);
   };
 
   if (isLoading) {
@@ -200,7 +278,7 @@ export default function ProjectEnvPage() {
                     {filteredVars.map((envVar) => (
                       <div key={envVar.id} className="flex items-center gap-4 p-4">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <code className="text-sm font-mono font-medium">
                               {envVar.key_name}
                             </code>
@@ -210,6 +288,11 @@ export default function ProjectEnvPage() {
                             >
                               {envVar.is_secret ? '비밀' : '공개'}
                             </Badge>
+                            {envVar.service_id && serviceNameMap.has(envVar.service_id) && (
+                              <Badge variant="outline" className="text-[10px]">
+                                {serviceNameMap.get(envVar.service_id)}
+                              </Badge>
+                            )}
                           </div>
                           {envVar.description && (
                             <p className="text-xs text-muted-foreground mt-0.5">
@@ -217,8 +300,8 @@ export default function ProjectEnvPage() {
                             </p>
                           )}
                           <code className="text-xs text-muted-foreground font-mono mt-1 block">
-                            {showValues[envVar.id]
-                              ? envVar.encrypted_value.substring(0, 50) + '...'
+                            {showValues[envVar.id] && decryptedValues[envVar.id] !== undefined
+                              ? decryptedValues[envVar.id]
                               : maskValue(envVar.encrypted_value)}
                           </code>
                         </div>
@@ -228,12 +311,21 @@ export default function ProjectEnvPage() {
                             size="icon"
                             className="h-8 w-8"
                             onClick={() => toggleShowValue(envVar.id)}
+                            disabled={decryptEnvVar.isPending}
                           >
                             {showValues[envVar.id] ? (
                               <EyeOff className="h-4 w-4" />
                             ) : (
                               <Eye className="h-4 w-4" />
                             )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => openEditDialog(envVar)}
+                          >
+                            <Pencil className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -253,6 +345,63 @@ export default function ProjectEnvPage() {
           </TabsContent>
         ))}
       </Tabs>
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>환경변수 수정</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEdit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-key">변수 이름</Label>
+              <Input
+                id="edit-key"
+                value={editKey}
+                onChange={(e) => setEditKey(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, '_'))}
+                className="font-mono"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-value">값</Label>
+              <Input
+                id="edit-value"
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                className="font-mono"
+                placeholder={decryptEnvVar.isPending ? '복호화 중...' : ''}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-desc">설명 (선택)</Label>
+              <Input
+                id="edit-desc"
+                value={editDesc}
+                onChange={(e) => setEditDesc(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="edit-secret"
+                checked={editIsSecret}
+                onCheckedChange={(checked) => setEditIsSecret(checked as boolean)}
+              />
+              <Label htmlFor="edit-secret" className="text-sm">
+                민감한 값 (Secret)
+              </Label>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>
+                취소
+              </Button>
+              <Button type="submit" disabled={updateEnvVar.isPending}>
+                {updateEnvVar.isPending ? '저장 중...' : '저장'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,0 +1,13 @@
+---
+description: 프로젝트 공통 컨벤션 (한국어 우선, 스택, 패턴)
+alwaysApply: true
+---
+
+# Linkmap 공통 규칙
+
+- **프로젝트**: Linkmap은 외부 서비스 연결 정보·환경변수를 시각화·안전하게 관리하는 설정 플랫폼. Next.js 16 (App Router) + Supabase + TypeScript + Tailwind + shadcn/ui.
+- **한국어**: UI·에러 메시지·주석은 한국어 우선. 사용자 노출 문구는 한글, 코드 내 주석도 한글 허용.
+- **데이터 페칭**: 서버 컴포넌트는 `createClient()` from `@/lib/supabase/server`, `export const dynamic = 'force-dynamic'` 사용. 클라이언트 데이터 페칭은 TanStack Query + `src/lib/queries` 훅.
+- **검증**: API 입력은 Zod 스키마(`src/lib/validations`). 에러는 `src/lib/api/errors.ts`의 `unauthorizedError`, `validationError`, `notFoundError`, `apiError` 사용.
+- **상태**: 서버 상태 TanStack Query, 클라이언트 UI 상태 Zustand(`src/stores`). QueryKey는 `src/lib/queries/keys.ts` 팩토리 패턴.
+- **구조**: 새 API는 `src/app/api/`, 컴포넌트는 `src/components/`, 공통 로직은 `src/lib/`.

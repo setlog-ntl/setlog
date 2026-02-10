@@ -46,7 +46,32 @@ export type ChangeType = 'added' | 'updated' | 'deprecated' | 'removed';
 
 export type ServiceStatus = 'not_started' | 'in_progress' | 'connected' | 'error';
 export type Environment = 'development' | 'staging' | 'production';
+export type HealthCheckStatus = 'healthy' | 'unhealthy' | 'degraded' | 'unknown';
 export type TeamRole = 'admin' | 'editor' | 'viewer';
+
+export type EasyCategory =
+  | 'login_signup'
+  | 'data_storage'
+  | 'deploy_hosting'
+  | 'payments'
+  | 'notifications'
+  | 'ai_tools'
+  | 'dev_tools'
+  | 'analytics_other';
+
+export type UserConnectionType = 'uses' | 'integrates' | 'data_transfer';
+
+export interface UserConnection {
+  id: string;
+  project_id: string;
+  source_service_id: string;
+  target_service_id: string;
+  connection_type: UserConnectionType;
+  label: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export interface Profile {
   id: string;
@@ -287,4 +312,15 @@ export interface ServiceChangelog {
   change_description: string | null;
   change_description_ko: string | null;
   created_at: string;
+}
+
+export interface HealthCheck {
+  id: string;
+  project_service_id: string;
+  environment: Environment;
+  status: HealthCheckStatus;
+  message: string | null;
+  response_time_ms: number | null;
+  details: Record<string, unknown>;
+  checked_at: string;
 }

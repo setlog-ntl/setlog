@@ -12,4 +12,14 @@ export const queryKeys = {
   catalog: {
     all: ['catalog'] as const,
   },
+  connections: {
+    byProject: (projectId: string) => ['connections', 'project', projectId] as const,
+  },
+  auditLogs: {
+    byProject: (projectId: string) => ['audit-logs', 'project', projectId] as const,
+  },
+  healthChecks: {
+    byProjectService: (projectServiceId: string) =>
+      ['health-checks', projectServiceId] as const,
+  },
 } as const;
