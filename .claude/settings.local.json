@@ -24,7 +24,9 @@
       "Bash(git config:*)",
       "Bash(git remote:*)",
       "Bash(npm install:*)",
-      "Bash(ls -la \"E:\\\\OneDrive\\\\2.PJT\\\\setlog\\\\.claude\"\" 2>/dev/null || echo \"No .claude directory found \")"
+      "Bash(ls -la \"E:\\\\OneDrive\\\\2.PJT\\\\setlog\\\\.claude\"\" 2>/dev/null || echo \"No .claude directory found \")",
+      "Bash(findstr:*)",
+      "Bash(git checkout:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
