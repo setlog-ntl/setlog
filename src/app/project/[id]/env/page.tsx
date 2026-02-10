@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queries/keys';
 import { useParams } from 'next/navigation';
 import { useEnvVars, useAddEnvVar, useDeleteEnvVar, useDecryptEnvVar, useUpdateEnvVar } from '@/lib/queries/env-vars';
 import { useProjectServices } from '@/lib/queries/services';
@@ -21,6 +23,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Download, Plus, Trash2, Eye, EyeOff, Pencil } from 'lucide-react';
+import { EnvImportDialog } from '@/components/service/env-import-dialog';
 import type { Environment, EnvironmentVariable } from '@/types';
 
 const envLabels: Record<Environment, string> = {
@@ -32,6 +35,7 @@ const envLabels: Record<Environment, string> = {
 export default function ProjectEnvPage() {
   const params = useParams();
   const projectId = params.id as string;
+  const queryClient = useQueryClient();
   const { data: envVars = [], isLoading } = useEnvVars(projectId);
   const { data: projectServices = [] } = useProjectServices(projectId);
   const addEnvVar = useAddEnvVar(projectId);
@@ -174,6 +178,17 @@ export default function ProjectEnvPage() {
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">환경변수 관리</h2>
         <div className="flex gap-2">
+          <EnvImportDialog
+            onImport={async (vars) => {
+              const res = await fetch('/api/env/bulk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ project_id: projectId, variables: vars }),
+              });
+              if (!res.ok) throw new Error('일괄 가져오기 실패');
+              await queryClient.invalidateQueries({ queryKey: queryKeys.envVars.byProject(projectId) });
+            }}
+          />
           <Button variant="outline" onClick={handleDownload}>
             <Download className="mr-2 h-4 w-4" />
             .env 다운로드

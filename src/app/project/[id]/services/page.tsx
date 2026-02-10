@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useProjectServices, useAddProjectService, useRemoveProjectService } from '@/lib/queries/services';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,8 +15,9 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { AddServiceDialog } from '@/components/service/add-service-dialog';
 import { ServiceChecklist } from '@/components/service/service-checklist';
-import { Trash2, ExternalLink } from 'lucide-react';
-import type { ServiceCategory } from '@/types';
+import { SetupWizard } from '@/components/service/setup-wizard';
+import { Trash2, ExternalLink, Wand2 } from 'lucide-react';
+import type { ServiceCategory, ProjectService, Service } from '@/types';
 
 const statusLabels: Record<string, string> = {
   not_started: '시작 전',
@@ -49,6 +51,7 @@ export default function ProjectServicesPage() {
   const { data: services = [], isLoading } = useProjectServices(projectId);
   const addService = useAddProjectService(projectId);
   const removeService = useRemoveProjectService(projectId);
+  const [wizardTarget, setWizardTarget] = useState<(ProjectService & { service: Service }) | null>(null);
 
   const handleAddService = async (serviceId: string) => {
     await addService.mutateAsync(serviceId);
@@ -118,7 +121,17 @@ export default function ProjectServicesPage() {
               </AccordionTrigger>
               <AccordionContent className="pb-4">
                 <div className="space-y-4 pt-2">
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
+                    {ps.service && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => setWizardTarget(ps)}
+                      >
+                        <Wand2 className="mr-1.5 h-3.5 w-3.5" />
+                        빠른 설정
+                      </Button>
+                    )}
                     {ps.service?.website_url && (
                       <Button variant="outline" size="sm" asChild>
                         <a href={ps.service.website_url} target="_blank" rel="noopener noreferrer">
@@ -179,6 +192,18 @@ export default function ProjectServicesPage() {
             </AccordionItem>
           ))}
         </Accordion>
+      )}
+
+      {/* Setup Wizard */}
+      {wizardTarget?.service && (
+        <SetupWizard
+          key={wizardTarget.id}
+          open={!!wizardTarget}
+          onOpenChange={(open) => { if (!open) setWizardTarget(null); }}
+          service={wizardTarget.service}
+          projectService={wizardTarget}
+          projectId={projectId}
+        />
       )}
     </div>
   );
