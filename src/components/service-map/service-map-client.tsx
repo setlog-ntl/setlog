@@ -103,18 +103,20 @@ function ServiceMapInner() {
   // Fetch data
   useEffect(() => {
     const fetchData = async () => {
-      const [{ data: project }, { data: svcData }, { data: depData }] = await Promise.all([
+      const [{ data: project }, { data: svcData }] = await Promise.all([
         supabase.from('projects').select('name').eq('id', projectId).single(),
         supabase
           .from('project_services')
           .select('*, service:services(*)')
           .eq('project_id', projectId),
-        supabase
-          .from('service_dependencies')
-          .select('*'),
       ]);
       if (project) setProjectName(project.name);
       setServices((svcData as (ProjectService & { service: Service })[]) || []);
+
+      // service_dependencies는 카탈로그 테이블 - 존재하지 않을 수 있음
+      const { data: depData } = await supabase
+        .from('service_dependencies')
+        .select('*');
       setDependencies((depData as ServiceDependency[]) || []);
       setLoading(false);
     };
@@ -353,7 +355,8 @@ function ServiceMapInner() {
   useEffect(() => {
     setNodes(layoutedNodes);
     setEdges(layoutedEdges);
-  }, [layoutedNodes, layoutedEdges, setNodes, setEdges]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layoutedNodes, layoutedEdges]);
 
   const onConnect = useCallback(
     (connection: Connection) => {
