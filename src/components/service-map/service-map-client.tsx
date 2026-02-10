@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -97,8 +97,12 @@ function ServiceMapInner() {
 
   // Fetch user connections
   const { data: userConnections = [] } = useProjectConnections(projectId);
-  const createConnection = useCreateConnection(projectId);
+  const createConnectionMutation = useCreateConnection(projectId);
   const deleteConnection = useDeleteConnection(projectId);
+
+  // Stable ref for createConnection to avoid unnecessary re-renders
+  const createConnectionRef = useRef(createConnectionMutation);
+  createConnectionRef.current = createConnectionMutation;
 
   // Fetch data
   useEffect(() => {
@@ -165,12 +169,17 @@ function ServiceMapInner() {
     return map;
   }, [filteredServices]);
 
+  // Use ref to stabilize deleteConnection and avoid infinite re-render loop
+  // (useMutation returns a new object reference each render)
+  const deleteConnectionRef = useRef(deleteConnection);
+  deleteConnectionRef.current = deleteConnection;
+
   // Handle delete user connection
   const handleDeleteUserConnection = useCallback((edgeId: string) => {
     // edgeId format: "uc-{connection.id}"
     const connectionId = edgeId.replace('uc-', '');
-    deleteConnection.mutate(connectionId);
-  }, [deleteConnection]);
+    deleteConnectionRef.current.mutate(connectionId);
+  }, []);
 
   // Build nodes
   const rawNodes = useMemo<Node[]>(() => {
@@ -367,7 +376,7 @@ function ServiceMapInner() {
       const targetPS = filteredServices.find((s) => s.id === connection.target);
 
       if (sourcePS && targetPS && sourcePS.service_id !== targetPS.service_id) {
-        createConnection.mutate({
+        createConnectionRef.current.mutate({
           project_id: projectId,
           source_service_id: sourcePS.service_id,
           target_service_id: targetPS.service_id,
@@ -375,7 +384,7 @@ function ServiceMapInner() {
         });
       }
     },
-    [connectMode, connectionType, filteredServices, projectId, createConnection]
+    [connectMode, connectionType, filteredServices, projectId]
   );
 
   const handleNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
