@@ -159,6 +159,9 @@ export function ServiceCatalogClient({ services, domains }: ServiceCatalogClient
     return result;
   }, [services, viewMode, selectedEasyCategory, selectedDomain, selectedCategory, freeTierFilter, search, sortBy]);
 
+  // Whether to show the service grid (not just category cards)
+  const showServiceGrid = viewMode === 'advanced' || selectedEasyCategory || (viewMode === 'easy' && !!search);
+
   // Check if any filter is active
   const hasActiveFilters = search || freeTierFilter !== 'all' ||
     (viewMode === 'advanced' && (selectedDomain !== 'all' || selectedCategory !== 'all')) ||
@@ -267,8 +270,22 @@ export function ServiceCatalogClient({ services, domains }: ServiceCatalogClient
         </>
       )}
 
-      {/* Easy mode: category cards */}
+      {/* Easy mode: search bar (always visible) */}
       {viewMode === 'easy' && !selectedEasyCategory && (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="서비스 검색 (예: GitHub, Supabase, Stripe...)"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="pl-9"
+            aria-label="서비스 검색"
+          />
+        </div>
+      )}
+
+      {/* Easy mode: category cards (hidden when searching) */}
+      {viewMode === 'easy' && !selectedEasyCategory && !search && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {EASY_CATEGORY_ORDER.map((ec, index) => (
             <motion.div
@@ -300,6 +317,25 @@ export function ServiceCatalogClient({ services, domains }: ServiceCatalogClient
             </h2>
           </div>
           <CategoryProcessDiagram steps={easyCategoryProcessFlows[selectedEasyCategory]} />
+        </div>
+      )}
+
+      {/* Easy mode: search results count */}
+      {viewMode === 'easy' && !selectedEasyCategory && search && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm text-muted-foreground">
+            {filteredServices.length}개 서비스
+          </span>
+          <Badge variant="secondary" className="gap-1 pr-1">
+            &quot;{search}&quot;
+            <button
+              onClick={() => { setSearchInput(''); setSearch(''); }}
+              className="ml-0.5 rounded-full p-0.5 hover:bg-muted-foreground/20 transition-colors"
+              aria-label={`"${search}" 검색어 제거`}
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </Badge>
         </div>
       )}
 
@@ -341,8 +377,8 @@ export function ServiceCatalogClient({ services, domains }: ServiceCatalogClient
         </div>
       )}
 
-      {/* Active filters + result count */}
-      {(viewMode === 'advanced' || selectedEasyCategory) && hasActiveFilters && (
+      {/* Active filters + result count (skip when easy mode global search — handled above) */}
+      {showServiceGrid && hasActiveFilters && !(viewMode === 'easy' && !selectedEasyCategory && search) && (
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm text-muted-foreground">
             {filteredServices.length}개 서비스
@@ -411,7 +447,7 @@ export function ServiceCatalogClient({ services, domains }: ServiceCatalogClient
       )}
 
       {/* Service cards grid */}
-      {(viewMode === 'advanced' || selectedEasyCategory) && filteredServices.length > 0 && (
+      {showServiceGrid && filteredServices.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <AnimatePresence mode="popLayout">
             {filteredServices.map((service, index) => (
@@ -483,7 +519,7 @@ export function ServiceCatalogClient({ services, domains }: ServiceCatalogClient
       )}
 
       {/* Empty state */}
-      {(viewMode === 'advanced' || selectedEasyCategory) && filteredServices.length === 0 && (
+      {showServiceGrid && filteredServices.length === 0 && (
         <div className="text-center py-16 space-y-3">
           <div className="text-4xl" aria-hidden="true">🔍</div>
           <p className="text-muted-foreground font-medium">
