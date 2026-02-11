@@ -24,6 +24,7 @@ export const domainIcons: Record<ServiceDomain, string> = {
 
 export const allCategoryLabels: Record<ServiceCategory, string> = {
   auth: '인증',
+  social_login: '소셜 로그인',
   database: '데이터베이스',
   deploy: '배포',
   email: '이메일',
@@ -55,6 +56,7 @@ export const allCategoryLabels: Record<ServiceCategory, string> = {
 
 export const allCategoryEmojis: Record<ServiceCategory, string> = {
   auth: '🔐',
+  social_login: '🌐',
   database: '🗄️',
   deploy: '🚀',
   email: '📧',
@@ -86,7 +88,7 @@ export const allCategoryEmojis: Record<ServiceCategory, string> = {
 
 export const domainCategoryMap: Record<ServiceDomain, ServiceCategory[]> = {
   infrastructure: ['deploy', 'cdn', 'serverless', 'storage', 'cache'],
-  backend: ['database', 'auth', 'queue', 'search', 'cms'],
+  backend: ['database', 'auth', 'social_login', 'queue', 'search', 'cms'],
   devtools: ['cicd', 'testing', 'code_quality', 'logging'],
   communication: ['email', 'sms', 'push', 'chat'],
   business: ['payment', 'ecommerce', 'analytics', 'scheduling'],

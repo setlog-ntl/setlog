@@ -49,7 +49,8 @@
       "Bash(node -e:*)",
       "Bash(npx next dev --port 3001)",
       "WebFetch(domain:infisical.com)",
-      "Bash(npm ls:*)"
+      "Bash(npm ls:*)",
+      "Bash(npm test:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

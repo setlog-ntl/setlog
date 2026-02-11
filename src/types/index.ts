@@ -1,5 +1,6 @@
 export type ServiceCategory =
   | 'auth'
+  | 'social_login'
   | 'database'
   | 'deploy'
   | 'email'

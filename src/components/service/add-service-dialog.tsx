@@ -19,6 +19,7 @@ import type { Service, ServiceCategory } from '@/types';
 
 const categoryLabels: Partial<Record<ServiceCategory, string>> = {
   auth: '인증',
+  social_login: '소셜 로그인',
   database: '데이터베이스',
   deploy: '배포',
   email: '이메일',
@@ -83,7 +84,7 @@ export function AddServiceDialog({ projectId, existingServiceIds, onAdd }: AddSe
     }
   };
 
-  const categories: (ServiceCategory | 'all')[] = ['all', 'auth', 'database', 'deploy', 'email', 'payment', 'storage', 'monitoring', 'ai', 'other'];
+  const categories: (ServiceCategory | 'all')[] = ['all', 'auth', 'social_login', 'database', 'deploy', 'email', 'payment', 'storage', 'monitoring', 'ai', 'other'];
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -145,9 +146,9 @@ export function AddServiceDialog({ projectId, existingServiceIds, onAdd }: AddSe
                       <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-sm font-medium shrink-0">
                         {service.name.charAt(0)}
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{service.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium">{service.name}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-2">
                           {service.description_ko || service.description}
                         </p>
                       </div>
