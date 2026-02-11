@@ -72,6 +72,14 @@ export function HeroSection() {
               <span className="flex items-center gap-1">✓ AES-256 암호화</span>
               <span className="flex items-center gap-1">✓ 실시간 연결 확인</span>
             </div>
+            <div className="mt-4">
+              <Link
+                href="/guides/github"
+                className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors"
+              >
+                처음이신가요? GitHub 설정부터 시작하기 →
+              </Link>
+            </div>
           </div>
         </ScrollReveal>
       </div>
