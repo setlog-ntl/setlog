@@ -30,9 +30,13 @@ import { ServiceDetailSheet } from '@/components/service-map/service-detail-shee
 import { CatalogSidebar } from '@/components/service-map/catalog-sidebar';
 import { EmptyMapState } from '@/components/service-map/empty-map-state';
 import { NodeContextMenu } from '@/components/service-map/node-context-menu';
+import { StatusOverviewBar } from '@/components/service-map/status-overview-bar';
+import { ServiceBentoGrid } from '@/components/service-map/service-bento-grid';
+import { DependencyChainPanel } from '@/components/service-map/dependency-chain-panel';
+import { HealthStatsPanel } from '@/components/service-map/health-stats-panel';
 import { Card, CardContent } from '@/components/ui/card';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { DollarSign } from 'lucide-react';
+import { DollarSign, ChevronDown as ChevronDownIcon, ChevronUp as ChevronUpIcon } from 'lucide-react';
 import { allCategoryLabels, allCategoryEmojis, domainLabels, domainIcons } from '@/lib/constants/service-filters';
 import { easyCategoryLabels, easyCategoryEmojis, serviceCategoryToEasy } from '@/lib/constants/easy-categories';
 import { getLayoutedElements } from '@/lib/layout/dagre-layout';
@@ -108,6 +112,8 @@ function ServiceMapInner() {
     expandedNodeId,
     setExpandedNodeId,
     setSidebarOpen,
+    bottomPanelOpen,
+    toggleBottomPanel,
   } = useServiceMapStore();
 
   const [projectName, setProjectName] = useState('내 앱');
@@ -308,6 +314,7 @@ function ServiceMapInner() {
           emoji: value.emoji,
           collapsed: isCollapsed,
           childCount: value.childCount,
+          groupKey: key,
           onToggleCollapse: () => toggleGroupCollapsed(key),
         },
         style: { zIndex: -1 },
@@ -335,6 +342,12 @@ function ServiceMapInner() {
       }
       if (collapsedGroups.has(groupKey)) return;
 
+      // Use gradient stroke for connected services with known category
+      const gradientId = `url(#edge-gradient-${category})`;
+      const hasGradient = ps.status === 'connected' && [
+        'auth', 'database', 'deploy', 'payment', 'ai', 'monitoring', 'storage',
+      ].includes(category);
+
       edges.push({
         id: `app-${ps.id}`,
         source: 'app',
@@ -342,19 +355,21 @@ function ServiceMapInner() {
         type: 'smoothstep',
         animated: ps.status === 'connected',
         style: {
-          stroke: ps.status === 'connected'
-            ? 'var(--chart-2)'
-            : ps.status === 'error'
-              ? 'var(--destructive)'
-              : 'var(--border)',
-          strokeWidth: 2,
+          stroke: hasGradient
+            ? gradientId
+            : ps.status === 'connected'
+              ? 'var(--chart-2)'
+              : ps.status === 'error'
+                ? 'var(--destructive)'
+                : 'var(--border)',
+          strokeWidth: ps.status === 'connected' ? 2.5 : 2,
         },
         markerEnd: {
           type: MarkerType.ArrowClosed,
           width: 16,
           height: 16,
           color: ps.status === 'connected'
-            ? 'var(--chart-2)'
+            ? (categoryMiniMapColors[category] || 'var(--chart-2)')
             : ps.status === 'error'
               ? 'var(--destructive)'
               : 'var(--border)',
@@ -618,7 +633,7 @@ function ServiceMapInner() {
     );
   }
 
-  // SVG marker definitions for dependency arrows
+  // SVG marker definitions for dependency arrows + gradient defs
   const depMarkerDefs = (
     <svg style={{ position: 'absolute', width: 0, height: 0 }}>
       <defs>
@@ -634,9 +649,42 @@ function ServiceMapInner() {
         <marker id="dep-arrow-alternative" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
           <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--chart-4)" />
         </marker>
+        {/* Category gradient stroke definitions */}
+        <linearGradient id="edge-gradient-auth" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="#a855f7" />
+        </linearGradient>
+        <linearGradient id="edge-gradient-database" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="#3b82f6" />
+        </linearGradient>
+        <linearGradient id="edge-gradient-deploy" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="#22c55e" />
+        </linearGradient>
+        <linearGradient id="edge-gradient-payment" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="#f97316" />
+        </linearGradient>
+        <linearGradient id="edge-gradient-ai" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="#6366f1" />
+        </linearGradient>
+        <linearGradient id="edge-gradient-monitoring" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="#ec4899" />
+        </linearGradient>
+        <linearGradient id="edge-gradient-storage" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="#06b6d4" />
+        </linearGradient>
       </defs>
     </svg>
   );
+
+  // Determine if bottom panel should show
+  const hasBottomPanel = viewMode === 'bento' || viewMode === 'dependency' || viewMode === 'health';
+  const mapMaxHeight = hasBottomPanel && bottomPanelOpen ? 'max-h-[500px]' : 'max-h-[900px]';
 
   return (
     <TooltipProvider>
@@ -660,7 +708,13 @@ function ServiceMapInner() {
           />
         </div>
 
-        <div className="h-[calc(100vh-16rem)] min-h-[500px] max-h-[900px] rounded-lg border bg-background relative flex overflow-hidden">
+        {/* Status overview bar */}
+        <StatusOverviewBar
+          services={services}
+          onServiceClick={(psId) => setFocusedNodeId(psId)}
+        />
+
+        <div className={`h-[calc(100vh-16rem)] min-h-[400px] ${mapMaxHeight} rounded-lg border bg-background relative flex overflow-hidden transition-all duration-300`}>
           {/* 카탈로그 사이드바 (Phase 1A) */}
           <CatalogSidebar
             projectId={projectId}
@@ -716,7 +770,7 @@ function ServiceMapInner() {
                   )}
                   {viewMode !== 'default' && (
                     <div className="border-t pt-1.5 text-muted-foreground">
-                      모드: {viewMode === 'cost' ? '비용' : viewMode === 'health' ? '상태' : '의존성'}
+                      모드: {viewMode === 'cost' ? '비용' : viewMode === 'health' ? '상태' : viewMode === 'bento' ? '카드' : '의존성'}
                     </div>
                   )}
                 </div>
@@ -762,6 +816,52 @@ function ServiceMapInner() {
             onRemoveService={handleContextRemoveService}
           />
         </div>
+
+        {/* Bottom panel toggle + panels */}
+        {hasBottomPanel && (
+          <div className="space-y-2">
+            <button
+              onClick={toggleBottomPanel}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {bottomPanelOpen ? (
+                <><ChevronUpIcon className="h-3 w-3" /> 패널 접기</>
+              ) : (
+                <><ChevronDownIcon className="h-3 w-3" /> 패널 펼치기</>
+              )}
+            </button>
+
+            {bottomPanelOpen && (
+              <>
+                {viewMode === 'bento' && (
+                  <ServiceBentoGrid
+                    services={services}
+                    healthChecks={healthChecks}
+                    dependencies={dependencies}
+                    serviceNames={serviceNames}
+                    userConnections={userConnections}
+                  />
+                )}
+
+                {viewMode === 'dependency' && (
+                  <DependencyChainPanel
+                    services={services}
+                    dependencies={dependencies}
+                    serviceNames={serviceNames}
+                  />
+                )}
+
+                {viewMode === 'health' && (
+                  <HealthStatsPanel
+                    services={services}
+                    healthChecks={healthChecks}
+                    userConnections={userConnections}
+                  />
+                )}
+              </>
+            )}
+          </div>
+        )}
 
         {/* Service detail sidebar */}
         <ServiceDetailSheet

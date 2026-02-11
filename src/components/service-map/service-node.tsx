@@ -139,7 +139,16 @@ function ServiceNode({ data }: NodeProps) {
       )}
 
       <div className="flex items-center gap-2">
-        <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${dotClass}`} />
+        <span className="relative flex h-2.5 w-2.5 shrink-0">
+          {(d.status === 'connected' || d.status === 'error') && (
+            <span
+              className={`absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping ${
+                d.status === 'connected' ? 'bg-green-400' : 'bg-red-400'
+              }`}
+            />
+          )}
+          <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${dotClass}`} />
+        </span>
         {d.iconSlug ? (
           <ServiceIcon serviceId={d.iconSlug} size={18} />
         ) : (

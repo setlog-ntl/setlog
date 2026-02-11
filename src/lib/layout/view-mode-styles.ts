@@ -125,3 +125,74 @@ export function shouldShowEdgeInViewMode(
   }
   return true;
 }
+
+// ─── 의존성 체인 빌드 유틸리티 ───
+
+export interface DependencyChain {
+  type: 'fallback' | 'required';
+  services: { serviceId: string; name: string; status: string; priority: number }[];
+  label: string;
+}
+
+export function buildDependencyChains(
+  dependencies: { service_id: string; depends_on_service_id: string; dependency_type: string }[],
+  serviceNames: Record<string, string>,
+  serviceStatuses: Record<string, string>
+): DependencyChain[] {
+  const chains: DependencyChain[] = [];
+
+  // Group alternative dependencies into fallback chains
+  const altGroups = new Map<string, string[]>();
+  dependencies
+    .filter((d) => d.dependency_type === 'alternative')
+    .forEach((dep) => {
+      const existing = altGroups.get(dep.service_id);
+      if (existing) {
+        existing.push(dep.depends_on_service_id);
+      } else {
+        altGroups.set(dep.service_id, [dep.depends_on_service_id]);
+      }
+    });
+
+  altGroups.forEach((targets, sourceId) => {
+    const allIds = [sourceId, ...targets];
+    chains.push({
+      type: 'fallback',
+      services: allIds.map((id, i) => ({
+        serviceId: id,
+        name: serviceNames[id] || id,
+        status: serviceStatuses[id] || 'not_started',
+        priority: i + 1,
+      })),
+      label: allIds.map((id) => serviceNames[id] || id).join(' → '),
+    });
+  });
+
+  // Group required dependencies into critical chains
+  const reqGroups = new Map<string, string[]>();
+  dependencies
+    .filter((d) => d.dependency_type === 'required')
+    .forEach((dep) => {
+      const existing = reqGroups.get(dep.service_id);
+      if (existing) {
+        existing.push(dep.depends_on_service_id);
+      } else {
+        reqGroups.set(dep.service_id, [dep.depends_on_service_id]);
+      }
+    });
+
+  reqGroups.forEach((targets, sourceId) => {
+    targets.forEach((targetId) => {
+      chains.push({
+        type: 'required',
+        services: [
+          { serviceId: sourceId, name: serviceNames[sourceId] || sourceId, status: serviceStatuses[sourceId] || 'not_started', priority: 1 },
+          { serviceId: targetId, name: serviceNames[targetId] || targetId, status: serviceStatuses[targetId] || 'not_started', priority: 2 },
+        ],
+        label: `${serviceNames[sourceId] || sourceId} → ${serviceNames[targetId] || targetId}`,
+      });
+    });
+  });
+
+  return chains;
+}

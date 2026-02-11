@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type ViewMode = 'default' | 'cost' | 'health' | 'dependency';
+export type ViewMode = 'default' | 'cost' | 'health' | 'dependency' | 'bento';
 
 interface ContextMenuState {
   x: number;
@@ -15,6 +15,7 @@ interface ServiceMapState {
   collapsedGroups: Set<string>;
   contextMenu: ContextMenuState | null;
   expandedNodeId: string | null;
+  bottomPanelOpen: boolean;
 
   setSidebarOpen: (open: boolean) => void;
   toggleSidebar: () => void;
@@ -23,6 +24,8 @@ interface ServiceMapState {
   toggleGroupCollapsed: (groupKey: string) => void;
   setContextMenu: (menu: ContextMenuState | null) => void;
   setExpandedNodeId: (id: string | null) => void;
+  setBottomPanelOpen: (open: boolean) => void;
+  toggleBottomPanel: () => void;
 }
 
 export const useServiceMapStore = create<ServiceMapState>((set) => ({
@@ -32,6 +35,7 @@ export const useServiceMapStore = create<ServiceMapState>((set) => ({
   collapsedGroups: new Set<string>(),
   contextMenu: null,
   expandedNodeId: null,
+  bottomPanelOpen: true,
 
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
@@ -46,4 +50,6 @@ export const useServiceMapStore = create<ServiceMapState>((set) => ({
     }),
   setContextMenu: (menu) => set({ contextMenu: menu }),
   setExpandedNodeId: (id) => set((s) => ({ expandedNodeId: s.expandedNodeId === id ? null : id })),
+  setBottomPanelOpen: (open) => set({ bottomPanelOpen: open }),
+  toggleBottomPanel: () => set((s) => ({ bottomPanelOpen: !s.bottomPanelOpen })),
 }));

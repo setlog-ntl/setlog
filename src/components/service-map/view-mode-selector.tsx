@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutDashboard, DollarSign, Activity, GitBranch } from 'lucide-react';
+import { LayoutDashboard, DollarSign, Activity, GitBranch, LayoutGrid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -16,6 +16,7 @@ const viewModeOptions: { value: ViewMode; label: string; icon: typeof LayoutDash
   { value: 'cost', label: '비용', icon: DollarSign },
   { value: 'health', label: '상태', icon: Activity },
   { value: 'dependency', label: '의존성', icon: GitBranch },
+  { value: 'bento', label: '카드', icon: LayoutGrid },
 ];
 
 export function ViewModeSelector() {
