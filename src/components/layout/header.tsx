@@ -55,6 +55,13 @@ export function Header({ profile }: HeaderProps) {
       >
         {t(locale, 'nav.serviceCatalog')}
       </Link>
+      <Link
+        href="/packages"
+        className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+        onClick={() => setSidebarOpen(false)}
+      >
+        패키지
+      </Link>
     </>
   );
 

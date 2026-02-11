@@ -325,3 +325,20 @@ export interface HealthCheck {
   details: Record<string, unknown>;
   checked_at: string;
 }
+
+// ============================================
+// Package System Types (re-export)
+// ============================================
+export type {
+  LinkmapConfig,
+  PackageServiceDef,
+  PackageEnvVar,
+  CodeSnippet,
+  SnippetStrategy,
+  Package,
+  PackageVersion,
+  PackageInstallation,
+  PackageWithLatestVersion,
+  PackageDetail,
+  InstallResult,
+} from './package';

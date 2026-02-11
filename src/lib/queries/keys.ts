@@ -24,4 +24,12 @@ export const queryKeys = {
     latestByProject: (projectId: string) =>
       ['health-checks', 'latest', projectId] as const,
   },
+  packages: {
+    all: ['packages'] as const,
+    search: (query: string) => ['packages', 'search', query] as const,
+    detail: (slug: string) => ['packages', slug] as const,
+    versions: (slug: string) => ['packages', slug, 'versions'] as const,
+    my: ['packages', 'my'] as const,
+    installations: (projectId: string) => ['packages', 'installations', projectId] as const,
+  },
 } as const;
