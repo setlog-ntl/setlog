@@ -14,6 +14,19 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return unauthorizedError();
 
+  // Check if requester is a member of the team (or team owner)
+  const { data: membership } = await supabase
+    .from('team_members')
+    .select('id')
+    .eq('team_id', teamId)
+    .eq('user_id', user.id)
+    .single();
+
+  if (!membership) {
+    const { data: team } = await supabase.from('teams').select('owner_id').eq('id', teamId).single();
+    if (!team || team.owner_id !== user.id) return apiError('접근 권한이 없습니다', 403);
+  }
+
   const { data: members, error } = await supabase
     .from('team_members')
     .select('*, user:user_id(email, raw_user_meta_data)')

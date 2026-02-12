@@ -170,6 +170,9 @@ export async function DELETE(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return unauthorizedError();
 
+  const { success } = rateLimit(`github-secrets-delete:${user.id}`, 20);
+  if (!success) return apiError('요청이 너무 많습니다.', 429);
+
   const projectId = request.nextUrl.searchParams.get('project_id');
   const owner = request.nextUrl.searchParams.get('owner');
   const repo = request.nextUrl.searchParams.get('repo');

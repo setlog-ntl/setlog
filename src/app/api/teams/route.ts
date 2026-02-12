@@ -12,16 +12,35 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return unauthorizedError();
 
-  const { data: teams, error } = await supabase
+  // Query 1: teams where user is owner
+  const { data: ownedTeams, error: ownedError } = await supabase
     .from('teams')
     .select('*, team_members(count)')
-    .or(`owner_id.eq.${user.id},id.in.(${
-      `select team_id from team_members where user_id = '${user.id}'`
-    })`);
+    .eq('owner_id', user.id);
 
-  if (error) return serverError(error.message);
+  if (ownedError) return serverError(ownedError.message);
 
-  return NextResponse.json({ teams: teams || [] });
+  // Query 2: teams where user is a member (via team_members join)
+  const { data: memberTeams, error: memberError } = await supabase
+    .from('team_members')
+    .select('team:teams(*, team_members(count))')
+    .eq('user_id', user.id);
+
+  if (memberError) return serverError(memberError.message);
+
+  // Merge and deduplicate by team id
+  const teamsMap = new Map<string, (typeof ownedTeams)[number]>();
+  for (const team of (ownedTeams || [])) {
+    teamsMap.set(team.id, team);
+  }
+  for (const row of (memberTeams || [])) {
+    const team = row.team as unknown as (typeof ownedTeams)[number] | null;
+    if (team && !teamsMap.has(team.id)) {
+      teamsMap.set(team.id, team);
+    }
+  }
+
+  return NextResponse.json({ teams: Array.from(teamsMap.values()) });
 }
 
 export async function POST(request: NextRequest) {

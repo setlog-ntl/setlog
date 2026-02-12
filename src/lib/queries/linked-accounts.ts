@@ -3,6 +3,36 @@ import { queryKeys } from './keys';
 import type { LinkedAccount, LinkedResource } from '@/types';
 
 /**
+ * ServiceAccount 응답 row를 LinkedAccount 도메인 타입으로 매핑하는 헬퍼
+ */
+function mapRowToLinkedAccount(row: any): LinkedAccount {
+  const metadata = (row.oauth_metadata || {}) as Record<string, unknown>;
+  const login = (metadata.login as string) || null;
+  const name = (metadata.name as string) || null;
+  const avatarUrl = (metadata.avatar_url as string) || null;
+  const email = (metadata.email as string) || null;
+  const providerFromMetadata = (metadata.provider as string) || null;
+
+  return {
+    id: row.id,
+    project_id: row.project_id,
+    service_id: row.service_id,
+    user_id: row.user_id,
+    provider: providerFromMetadata,
+    external_user_id: (row.oauth_provider_user_id as string | null) ?? null,
+    display_name: name || login,
+    avatar_url: avatarUrl,
+    email,
+    connection_type: row.connection_type,
+    status: row.status,
+    last_verified_at: row.last_verified_at,
+    error_message: row.error_message,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  } satisfies LinkedAccount;
+}
+
+/**
  * 프로젝트 내 모든 LinkedAccount 조회
  *
  * - 현재는 /api/service-accounts 응답(ServiceAccount[])을 직접 사용하고 있으나,
@@ -20,34 +50,7 @@ export function useLinkedAccounts(projectId: string) {
       }
 
       const data = (await res.json()) as any[];
-      // NOTE: 현재는 ServiceAccount[] 형태이므로, 최소 필드만 얕게 매핑한다.
-      // 추후 /api/projects/[id]/linked-accounts 도입 시 서버에서 완전한 LinkedAccount로 변환하도록 변경 가능.
-      return data.map((row) => {
-        const metadata = (row.oauth_metadata || {}) as Record<string, unknown>;
-        const login = (metadata.login as string) || null;
-        const name = (metadata.name as string) || null;
-        const avatarUrl = (metadata.avatar_url as string) || null;
-        const email = (metadata.email as string) || null;
-        const providerFromMetadata = (metadata.provider as string) || null;
-
-        return {
-          id: row.id,
-          project_id: row.project_id,
-          service_id: row.service_id,
-          user_id: row.user_id,
-          provider: providerFromMetadata,
-          external_user_id: (row.oauth_provider_user_id as string | null) ?? null,
-          display_name: name || login,
-          avatar_url: avatarUrl,
-          email,
-          connection_type: row.connection_type,
-          status: row.status,
-          last_verified_at: row.last_verified_at,
-          error_message: row.error_message,
-          created_at: row.created_at,
-          updated_at: row.updated_at,
-        } satisfies LinkedAccount;
-      });
+      return data.map(mapRowToLinkedAccount);
     },
     enabled: !!projectId,
     staleTime: 30_000,
@@ -75,32 +78,7 @@ export function useLinkedAccountsByService(projectId: string, _serviceSlug: stri
       }
 
       const data = (await res.json()) as any[];
-      return data.map((row) => {
-        const metadata = (row.oauth_metadata || {}) as Record<string, unknown>;
-        const login = (metadata.login as string) || null;
-        const name = (metadata.name as string) || null;
-        const avatarUrl = (metadata.avatar_url as string) || null;
-        const email = (metadata.email as string) || null;
-        const providerFromMetadata = (metadata.provider as string) || null;
-
-        return {
-          id: row.id,
-          project_id: row.project_id,
-          service_id: row.service_id,
-          user_id: row.user_id,
-          provider: providerFromMetadata,
-          external_user_id: (row.oauth_provider_user_id as string | null) ?? null,
-          display_name: name || login,
-          avatar_url: avatarUrl,
-          email,
-          connection_type: row.connection_type,
-          status: row.status,
-          last_verified_at: row.last_verified_at,
-          error_message: row.error_message,
-          created_at: row.created_at,
-          updated_at: row.updated_at,
-        } satisfies LinkedAccount;
-      });
+      return data.map(mapRowToLinkedAccount);
     },
     enabled: !!projectId,
     staleTime: 30_000,

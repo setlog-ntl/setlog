@@ -207,7 +207,7 @@ export function ServiceDetailSheet({
                       key={dep.id}
                       className="flex items-center justify-between text-sm rounded-md bg-muted/50 px-2.5 py-1.5"
                     >
-                      <span>{serviceNames[dep.depends_on_service_id] || dep.depends_on_service_id}</span>
+                      <span>{serviceNames[dep.depends_on_service_id] || '알 수 없는 서비스'}</span>
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                         {depTypeLabels[dep.dependency_type] || dep.dependency_type}
                       </Badge>

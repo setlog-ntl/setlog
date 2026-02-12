@@ -4,7 +4,12 @@ import { decrypt } from '@/lib/crypto';
 import { unauthorizedError, notFoundError, apiError } from '@/lib/api/errors';
 import { rateLimit } from '@/lib/rate-limit';
 import { logAudit } from '@/lib/audit';
+import { z } from 'zod';
 import type { DbEnvVarWithProject } from '@/lib/supabase/types';
+
+const decryptRequestSchema = z.object({
+  id: z.string().uuid('유효한 환경변수 ID가 필요합니다'),
+});
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -14,10 +19,19 @@ export async function POST(request: NextRequest) {
   const { success } = rateLimit(`decrypt:${user.id}`, 20);
   if (!success) return apiError('요청이 너무 많습니다.', 429);
 
-  const { id } = await request.json();
-  if (!id) {
-    return apiError('환경변수 ID가 필요합니다', 400);
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return apiError('유효하지 않은 JSON 형식입니다', 400);
   }
+
+  const parsed = decryptRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return apiError(parsed.error.issues[0].message, 400);
+  }
+
+  const { id } = parsed.data;
 
   const { data: envVar } = await supabase
     .from('environment_variables')

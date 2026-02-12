@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +22,7 @@ import {
   X,
   Loader2,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import type { EnvironmentVariable, EnvVarTemplate, Environment } from '@/types';
 
 interface ServiceEnvVarsSectionProps {
@@ -51,6 +52,21 @@ export function ServiceEnvVarsSection({
   const [formKey, setFormKey] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [decryptedValues, setDecryptedValues] = useState<Record<string, string>>({});
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
+  // M2: Clear decrypted values on unmount
+  useEffect(() => {
+    return () => {
+      setDecryptedValues({});
+    };
+  }, []);
+
+  // Reset pendingDeleteId after timeout
+  useEffect(() => {
+    if (!pendingDeleteId) return;
+    const timer = setTimeout(() => setPendingDeleteId(null), 3000);
+    return () => clearTimeout(timer);
+  }, [pendingDeleteId]);
 
   const addEnvVar = useAddEnvVar(projectId);
   const updateEnvVar = useUpdateEnvVar(projectId);
@@ -94,6 +110,9 @@ export function ServiceEnvVarsSection({
           setFormKey('');
           setFormDescription('');
         },
+        onError: () => {
+          toast.error('환경변수 추가에 실패했습니다');
+        },
       }
     );
   };
@@ -112,13 +131,30 @@ export function ServiceEnvVarsSection({
             return next;
           });
         },
+        onError: () => {
+          toast.error('환경변수 수정에 실패했습니다');
+        },
       }
     );
   };
 
-  const handleDelete = (id: string) => {
-    deleteEnvVar.mutate(id);
-  };
+  const handleDelete = useCallback((id: string) => {
+    if (pendingDeleteId === id) {
+      // Confirmed — perform actual delete
+      deleteEnvVar.mutate(id, {
+        onSuccess: () => {
+          setPendingDeleteId(null);
+        },
+        onError: () => {
+          toast.error('환경변수 삭제에 실패했습니다');
+          setPendingDeleteId(null);
+        },
+      });
+    } else {
+      // First click — request confirmation
+      setPendingDeleteId(id);
+    }
+  }, [pendingDeleteId, deleteEnvVar]);
 
   const handleDecrypt = (id: string) => {
     if (decryptedValues[id]) {
@@ -133,6 +169,9 @@ export function ServiceEnvVarsSection({
     decryptEnvVar.mutate(id, {
       onSuccess: (value) => {
         setDecryptedValues((prev) => ({ ...prev, [id]: value }));
+      },
+      onError: () => {
+        toast.error('복호화에 실패했습니다');
       },
     });
   };
@@ -217,12 +256,16 @@ export function ServiceEnvVarsSection({
           <Button
             variant="ghost"
             size="icon"
-            className="h-5 w-5 text-destructive"
+            className={`h-5 w-5 text-destructive ${pendingDeleteId === ev.id ? 'bg-destructive/10' : ''}`}
             onClick={() => handleDelete(ev.id)}
             disabled={deleteEnvVar.isPending}
-            title="삭제"
+            title={pendingDeleteId === ev.id ? '삭제 확인' : '삭제'}
           >
-            <Trash2 className="h-3 w-3" />
+            {pendingDeleteId === ev.id ? (
+              <Check className="h-3 w-3" />
+            ) : (
+              <Trash2 className="h-3 w-3" />
+            )}
           </Button>
         </div>
       </div>
@@ -306,6 +349,8 @@ export function ServiceEnvVarsSection({
               setAddingKey(null);
               setAddingCustom(false);
               setEditingId(null);
+              setFormValue('');
+              setFormKey('');
             }}
             className={`text-xs px-2.5 py-1 rounded-md transition-colors ${
               activeEnv === env.value

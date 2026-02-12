@@ -77,6 +77,7 @@ export async function GET(
         code,
         redirect_uri: `${request.nextUrl.origin}/api/oauth/${provider}/callback`,
       }),
+      signal: AbortSignal.timeout(10000),
     });
 
     const tokenData = await tokenRes.json();
@@ -101,6 +102,7 @@ export async function GET(
           Authorization: `Bearer ${accessToken}`,
           'User-Agent': 'Linkmap/1.0',
         },
+        signal: AbortSignal.timeout(10000),
       });
       if (userRes.ok) {
         const userData = await userRes.json();
@@ -189,9 +191,11 @@ export async function GET(
       new URL(redirectUrl, request.nextUrl.origin)
     );
   } catch (err) {
-    console.error('OAuth callback error:', err);
+    const isTimeout = err instanceof DOMException && err.name === 'TimeoutError';
+    console.error('OAuth callback error:', isTimeout ? 'External API request timed out' : err);
+    const errorCode = isTimeout ? 'timeout' : 'callback_failed';
     return NextResponse.redirect(
-      new URL(`${oauthState.redirect_url}?error=callback_failed`, request.nextUrl.origin)
+      new URL(`${oauthState.redirect_url}?error=${errorCode}`, request.nextUrl.origin)
     );
   }
 }

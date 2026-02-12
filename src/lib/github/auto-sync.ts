@@ -44,6 +44,7 @@ export async function triggerAutoSync(
       const publicKey = await getRepoPublicKey(token, repo.owner, repo.repo_name);
 
       let syncedCount = 0;
+      const failedSecrets: Array<{ key_name: string; error: string }> = [];
       for (const ev of envVars) {
         try {
           const secretName = mapEnvVarToSecretName(ev.key_name);
@@ -51,8 +52,14 @@ export async function triggerAutoSync(
           const naclEncrypted = encryptSecretForGitHub(plainValue, publicKey.key);
           await createOrUpdateSecret(token, repo.owner, repo.repo_name, secretName, naclEncrypted, publicKey.key_id);
           syncedCount++;
-        } catch {
+        } catch (err) {
           // Individual secret failures shouldn't stop the sync
+          const errorMsg = err instanceof Error ? err.message : '알 수 없는 오류';
+          console.error(
+            `Auto-sync: failed to sync secret "${ev.key_name}" to ${repo.repo_full_name}:`,
+            errorMsg
+          );
+          failedSecrets.push({ key_name: ev.key_name, error: errorMsg });
         }
       }
 
@@ -71,6 +78,7 @@ export async function triggerAutoSync(
           environment,
           synced_count: syncedCount,
           total: envVars.length,
+          ...(failedSecrets.length > 0 && { failed_secrets: failedSecrets }),
         },
       });
     } catch (err) {

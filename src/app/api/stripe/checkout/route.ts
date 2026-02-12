@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
   const { priceId } = await request.json();
   if (!priceId) return apiError('가격 ID가 필요합니다', 400);
 
-  // Get or create stripe customer
+  // Get or create stripe customer (with race condition handling)
   let { data: subscription } = await supabase
     .from('subscriptions')
     .select('stripe_customer_id')
@@ -36,14 +36,30 @@ export async function POST(request: NextRequest) {
       }),
     });
     const customer = await customerRes.json();
+    if (!customer.id) return apiError('Stripe 고객 생성에 실패했습니다', 502);
     customerId = customer.id;
 
-    await supabase.from('subscriptions').upsert({
+    const { error: upsertError } = await supabase.from('subscriptions').upsert({
       user_id: user.id,
       stripe_customer_id: customerId,
       plan: 'free',
       status: 'active',
     });
+
+    // Race condition: another request may have inserted between our check and create.
+    // Re-fetch to use the existing record's customer ID instead.
+    if (upsertError) {
+      const { data: existing } = await supabase
+        .from('subscriptions')
+        .select('stripe_customer_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (existing?.stripe_customer_id) {
+        customerId = existing.stripe_customer_id;
+      }
+      // If we still don't have a customer ID from DB, proceed with the one we just created
+    }
   }
 
   // Create checkout session

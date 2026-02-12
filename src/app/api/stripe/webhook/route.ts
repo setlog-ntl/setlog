@@ -1,5 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { timingSafeEqual, createHmac } from 'crypto';
+
+function verifyStripeSignature(
+  payload: string,
+  signatureHeader: string,
+  secret: string,
+  tolerance = 300 // 5 minutes
+): { verified: boolean; event?: unknown; error?: string } {
+  const parts = signatureHeader.split(',').reduce<Record<string, string>>((acc, part) => {
+    const [key, value] = part.split('=');
+    if (key && value) acc[key.trim()] = value.trim();
+    return acc;
+  }, {});
+
+  const timestamp = parts['t'];
+  const expectedSig = parts['v1'];
+
+  if (!timestamp || !expectedSig) {
+    return { verified: false, error: 'Invalid signature header format' };
+  }
+
+  // Check timestamp tolerance to prevent replay attacks
+  const timestampAge = Math.floor(Date.now() / 1000) - parseInt(timestamp, 10);
+  if (isNaN(timestampAge) || timestampAge > tolerance) {
+    return { verified: false, error: 'Webhook timestamp too old' };
+  }
+
+  // Compute expected signature: HMAC-SHA256 of "timestamp.payload"
+  const signedPayload = `${timestamp}.${payload}`;
+  const computedSig = createHmac('sha256', secret).update(signedPayload, 'utf8').digest('hex');
+
+  // Timing-safe comparison
+  const a = Buffer.from(expectedSig, 'utf8');
+  const b = Buffer.from(computedSig, 'utf8');
+  if (a.length !== b.length || !timingSafeEqual(a, b)) {
+    return { verified: false, error: 'Signature verification failed' };
+  }
+
+  try {
+    const event = JSON.parse(payload);
+    return { verified: true, event };
+  } catch {
+    return { verified: false, error: 'Invalid JSON payload' };
+  }
+}
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -10,20 +55,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
   }
 
-  // In production, verify the webhook signature using Stripe SDK
-  // For now, parse the event directly
-  let event;
-  try {
-    event = JSON.parse(body);
-  } catch {
-    return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
+  // Verify webhook signature using Stripe's signing scheme (HMAC-SHA256)
+  const { verified, event, error: verifyError } = verifyStripeSignature(body, signature, webhookSecret);
+  if (!verified || !event) {
+    console.error('Stripe webhook signature verification failed:', verifyError);
+    return NextResponse.json({ error: verifyError || 'Signature verification failed' }, { status: 400 });
   }
+
+  const { type, data } = event as { type: string; data: { object: Record<string, unknown> } };
 
   const supabase = await createClient();
 
-  switch (event.type) {
+  switch (type) {
     case 'checkout.session.completed': {
-      const session = event.data.object;
+      const session = data.object;
       const customerId = session.customer;
       const subscriptionId = session.subscription;
 
@@ -40,7 +85,12 @@ export async function POST(request: NextRequest) {
     }
 
     case 'customer.subscription.updated': {
-      const subscription = event.data.object;
+      const subscription = data.object as {
+        id: string;
+        status: string;
+        current_period_start: number;
+        current_period_end: number;
+      };
       const status = subscription.status === 'active' ? 'active' : 'past_due';
 
       await supabase
@@ -56,7 +106,7 @@ export async function POST(request: NextRequest) {
     }
 
     case 'customer.subscription.deleted': {
-      const subscription = event.data.object;
+      const subscription = data.object;
 
       await supabase
         .from('subscriptions')
