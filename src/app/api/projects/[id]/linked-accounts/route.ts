@@ -7,13 +7,14 @@ import { mapServiceAccountToLinkedAccount } from '@/lib/mappers/linked-account';
  * GET /api/projects/[id]/linked-accounts
  *
  * - 현재 service_accounts 테이블을 조회하여 LinkedAccount 도메인 객체로 변환해 반환한다.
- * - 쿼리 파라미터:
- *   - service (optional): 특정 service_id 필터링
+ * - Next.js 16의 RouteHandler 타입에 맞춰 context.params는 Promise 형태로 처리한다.
  */
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } },
+  context: { params: Promise<{ id: string }> },
 ) {
+  const { id: projectId } = await context.params;
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -21,7 +22,6 @@ export async function GET(
 
   if (!user) return unauthorizedError();
 
-  const projectId = params.id;
   if (!projectId) return apiError('project_id가 필요합니다', 400);
 
   // 프로젝트 소유권 검증
