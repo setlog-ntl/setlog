@@ -20,7 +20,8 @@
   },
   "nav": {
     "serviceCatalog": "Service Catalog",
-    "pricing": "Pricing"
+    "pricing": "Pricing",
+    "oneclick": "One-Click Deploy"
   },
   "dashboard": {
     "title": "My Projects",
@@ -79,7 +80,8 @@
     "pricingTitle": "Fair Pricing",
     "pricingDesc": "Start free, upgrade when you need",
     "finalCtaTitle": "Get Started Now",
-    "finalCtaDesc": "Manage up to 3 projects for free. No credit card required."
+    "finalCtaDesc": "Manage up to 3 projects for free. No credit card required.",
+    "ctaOneclick": "Create Your Homepage in 3 Min"
   },
   "error": {
     "pageNotFound": "Page Not Found",

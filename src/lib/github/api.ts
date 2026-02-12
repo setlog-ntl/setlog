@@ -126,6 +126,33 @@ export async function createOrUpdateSecret(
   });
 }
 
+// ---------- Fork APIs ----------
+
+export interface GitHubForkResult {
+  id: number;
+  name: string;
+  full_name: string;
+  html_url: string;
+  owner: { login: string };
+  default_branch: string;
+}
+
+export async function forkRepo(
+  token: string,
+  owner: string,
+  repo: string,
+  newName?: string
+): Promise<GitHubForkResult> {
+  return githubFetch<GitHubForkResult>(`/repos/${owner}/${repo}/forks`, {
+    token,
+    method: 'POST',
+    body: {
+      name: newName || repo,
+      default_branch_only: true,
+    },
+  });
+}
+
 export async function deleteSecret(
   token: string,
   owner: string,

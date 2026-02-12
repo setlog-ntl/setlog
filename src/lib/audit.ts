@@ -20,7 +20,11 @@ export type AuditAction =
   | 'github.repo_link'
   | 'github.repo_unlink'
   | 'github.secrets_push'
-  | 'github.auto_sync';
+  | 'github.auto_sync'
+  | 'oneclick.fork'
+  | 'oneclick.deploy'
+  | 'oneclick.deploy_success'
+  | 'oneclick.deploy_error';
 
 interface AuditLogEntry {
   action: AuditAction;

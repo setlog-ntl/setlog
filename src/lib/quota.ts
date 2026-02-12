@@ -6,6 +6,7 @@ export interface PlanQuota {
   max_env_vars_per_project: number;
   max_services_per_project: number;
   max_team_members: number;
+  max_homepage_deploys: number;
 }
 
 const DEFAULT_QUOTA: PlanQuota = {
@@ -14,6 +15,7 @@ const DEFAULT_QUOTA: PlanQuota = {
   max_env_vars_per_project: 20,
   max_services_per_project: 10,
   max_team_members: 0,
+  max_homepage_deploys: 1,
 };
 
 export async function getUserQuota(userId: string): Promise<PlanQuota> {
@@ -35,6 +37,22 @@ export async function getUserQuota(userId: string): Promise<PlanQuota> {
     .single();
 
   return (quota as PlanQuota) || DEFAULT_QUOTA;
+}
+
+export async function checkHomepageDeployQuota(userId: string): Promise<{ allowed: boolean; current: number; max: number }> {
+  const supabase = await createClient();
+  const quota = await getUserQuota(userId);
+
+  const { count } = await supabase
+    .from('homepage_deploys')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId);
+
+  return {
+    allowed: (count || 0) < quota.max_homepage_deploys,
+    current: count || 0,
+    max: quota.max_homepage_deploys,
+  };
 }
 
 export async function checkProjectQuota(userId: string): Promise<{ allowed: boolean; current: number; max: number }> {

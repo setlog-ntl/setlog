@@ -4,7 +4,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, ChevronDown } from 'lucide-react';
+import { ArrowRight, ChevronDown, Rocket } from 'lucide-react';
 import { GradientBg } from './gradient-bg';
 import { ScrollReveal } from './scroll-reveal';
 
@@ -60,9 +60,9 @@ export function HeroSection() {
                 </Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link href="#interactive-demo">
-                  인터랙티브 데모
-                  <ChevronDown className="ml-2 h-4 w-4" />
+                <Link href="/oneclick">
+                  <Rocket className="mr-2 h-4 w-4" />
+                  3분 안에 홈페이지 만들기
                 </Link>
               </Button>
             </div>
