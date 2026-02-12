@@ -7,11 +7,16 @@ export function useServiceAccounts(projectId: string) {
     queryKey: queryKeys.serviceAccounts.byProject(projectId),
     queryFn: async (): Promise<ServiceAccount[]> => {
       const res = await fetch(`/api/service-accounts?project_id=${projectId}`);
-      if (!res.ok) throw new Error('서비스 계정 목록을 불러올 수 없습니다');
+      if (!res.ok) {
+        // 테이블 미존재 등 비정상 상태에서도 맵이 동작하도록 빈 배열 반환
+        console.warn('service-accounts fetch failed:', res.status);
+        return [];
+      }
       return res.json();
     },
     enabled: !!projectId,
     staleTime: 30_000,
+    retry: false, // 테이블 미존재 시 불필요한 재시도 방지
   });
 }
 

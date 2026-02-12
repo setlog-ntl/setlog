@@ -21,7 +21,13 @@ export async function GET(request: NextRequest) {
     .eq('project_id', projectId)
     .order('created_at');
 
-  if (error) return apiError(error.message, 400);
+  if (error) {
+    // 테이블이 아직 존재하지 않는 경우 빈 배열 반환 (마이그레이션 미실행)
+    if (error.code === '42P01' || error.message?.includes('relation') || error.code === 'PGRST204') {
+      return NextResponse.json([]);
+    }
+    return apiError(error.message, 400);
+  }
   return NextResponse.json(data);
 }
 

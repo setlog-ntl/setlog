@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -100,21 +100,20 @@ const categoryMiniMapColors: Record<string, string> = {
 
 function ServiceMapInner() {
   const params = useParams();
-  const searchParams = useSearchParams();
   const projectId = params.id as string;
   const supabaseRef = useRef(createClient());
 
-  // OAuth 성공 리다이렉트 처리
+  // OAuth 성공 리다이렉트 처리 (useSearchParams 대신 window.location 사용 — Suspense 불필요)
   useEffect(() => {
-    const oauthSuccess = searchParams.get('oauth_success');
+    const urlParams = new URLSearchParams(window.location.search);
+    const oauthSuccess = urlParams.get('oauth_success');
     if (oauthSuccess) {
       toast.success(`${oauthSuccess} 계정이 연결되었습니다`);
-      // URL에서 파라미터 제거
       const url = new URL(window.location.href);
       url.searchParams.delete('oauth_success');
       window.history.replaceState({}, '', url.toString());
     }
-  }, [searchParams]);
+  }, []);
 
   // Zustand store
   const {
