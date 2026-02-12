@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { encrypt } from '@/lib/crypto';
+import { encrypt, decrypt } from '@/lib/crypto';
 import { createEnvVarSchema, updateEnvVarSchema } from '@/lib/validations/env';
 import { unauthorizedError, notFoundError, validationError, apiError } from '@/lib/api/errors';
 import { rateLimit } from '@/lib/rate-limit';
 import { logAudit } from '@/lib/audit';
+import { triggerAutoSync } from '@/lib/github/auto-sync';
 import type { DbEnvVarWithProject } from '@/lib/supabase/types';
 
 export async function POST(request: NextRequest) {
@@ -57,6 +58,9 @@ export async function POST(request: NextRequest) {
     details: { key_name, project_id },
   });
 
+  // Trigger auto-sync to GitHub (non-blocking)
+  triggerAutoSync(project_id, environment, user.id).catch(() => {});
+
   return NextResponse.json({ ...data, decrypted_value: value });
 }
 
@@ -107,6 +111,11 @@ export async function PATCH(request: NextRequest) {
     details: { updated_fields: Object.keys(updates).filter(k => k !== 'updated_at') },
   });
 
+  // Trigger auto-sync (non-blocking)
+  if (data) {
+    triggerAutoSync(envVarTyped.project_id, data.environment, user.id).catch(() => {});
+  }
+
   return NextResponse.json(data);
 }
 
@@ -143,6 +152,9 @@ export async function DELETE(request: NextRequest) {
     resourceId: id,
     details: { key_name: envVarDel.key_name },
   });
+
+  // Trigger auto-sync (non-blocking)
+  triggerAutoSync(envVarDel.project_id, envVarDel.environment, user.id).catch(() => {});
 
   return NextResponse.json({ success: true });
 }

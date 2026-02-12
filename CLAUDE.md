@@ -49,20 +49,22 @@ src/
 │   ├── services/     # Service catalog
 │   ├── pricing/      # Pricing page
 │   ├── settings/     # User settings (tokens)
-│   └── api/          # API routes (env, projects, teams, tokens, stripe)
+│   └── api/          # API routes (env, projects, teams, tokens, stripe, github)
 ├── components/
 │   ├── ui/           # shadcn/ui components
 │   ├── layout/       # Header, Footer
 │   ├── project/      # Project-related components
 │   ├── service/      # Service catalog components
-│   └── service-map/  # React Flow nodes and map
+│   ├── service-map/  # React Flow nodes and map
+│   └── github/       # GitHub repo selector, secrets sync panel
 ├── lib/
 │   ├── api/          # API error helpers
 │   ├── crypto/       # AES-256-GCM encryption
+│   ├── github/       # GitHub API helper, NaCl encrypt, auto-map, auto-sync
 │   ├── i18n/         # Internationalization (ko, en)
-│   ├── queries/      # TanStack Query hooks
+│   ├── queries/      # TanStack Query hooks (+ github.ts)
 │   ├── supabase/     # Supabase client/server/middleware
-│   └── validations/  # Zod schemas
+│   └── validations/  # Zod schemas (+ github.ts)
 ├── stores/           # Zustand stores (ui-store, project-store, locale-store)
 ├── types/            # TypeScript interfaces
 └── data/             # Seed data (services, templates)
@@ -76,7 +78,8 @@ supabase/migrations/
 ├── 003_audit_log.sql       # Audit logging
 ├── 004_subscriptions.sql   # Stripe subscriptions
 ├── 005_teams.sql           # Team collaboration RBAC
-└── 006_api_tokens.sql      # API tokens for MCP/CLI
+├── 006_api_tokens.sql      # API tokens for MCP/CLI
+└── 013_project_github_repos.sql  # GitHub repo linking
 ```
 
 ## Roadmap Progress (고도화 로드맵)
@@ -87,4 +90,5 @@ supabase/migrations/
 - [x] 단계 5: 비즈니스 기능 (Stripe, 팀 RBAC, i18n)
 - [x] 단계 6: 관찰 가능성 (구조화 로깅, 성능 최적화)
 - [x] 단계 7: 플랫폼 확장 (MCP 서버, CLI, 문서화)
-- **전체 19개 스프린트 완료** | 목표 점수: 9.5/10
+- [x] 단계 8: GitHub 통합 (OAuth, Secrets 동기화, 자동연결)
+- **전체 19개 스프린트 + GitHub 통합 완료**

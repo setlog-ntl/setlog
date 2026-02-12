@@ -19,8 +19,11 @@ import {
   AlertTriangle,
   Loader2,
   ExternalLink,
+  GitBranch,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { RepoSelector } from '@/components/github/repo-selector';
+import { useLinkedRepos } from '@/lib/queries/github';
 import type { ServiceAccount } from '@/types';
 
 interface ServiceAccountSectionProps {
@@ -67,6 +70,8 @@ export function ServiceAccountSection({
   const config = getConnectionConfig(serviceSlug);
   const account = accounts.find((a) => a.service_id === serviceId);
   const status = account ? statusConfig[account.status] || statusConfig.error : null;
+  const isGitHub = serviceSlug === 'github-actions';
+  const { data: linkedRepos = [] } = useLinkedRepos(projectId);
 
   const handleDisconnect = (acc: ServiceAccount) => {
     disconnectMutation.mutate(acc.id, {
@@ -189,6 +194,26 @@ export function ServiceAccountSection({
               )}
             </Button>
           </div>
+
+          {/* GitHub: one-click repo linking after OAuth */}
+          {isGitHub && account.status === 'active' && (
+            <div className="mt-2 pt-2 border-t border-border/50">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <GitBranch className="h-3 w-3" />
+                  레포 {linkedRepos.length}개 연결됨
+                </span>
+                <RepoSelector
+                  projectId={projectId}
+                  trigger={
+                    <Button variant="ghost" size="sm" className="h-6 text-xs">
+                      레포 연결
+                    </Button>
+                  }
+                />
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         // 미연결 상태 - 연결 방법 버튼

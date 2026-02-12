@@ -13,7 +13,7 @@ export const serviceConnectionConfigs: Record<string, ServiceConnectionConfig> =
       provider: 'github',
       authorization_url: 'https://github.com/login/oauth/authorize',
       token_url: 'https://github.com/login/oauth/access_token',
-      scopes: ['repo', 'read:org', 'read:user'],
+      scopes: ['repo', 'read:org', 'read:user', 'workflow'],
     },
     api_key_fields: [
       {

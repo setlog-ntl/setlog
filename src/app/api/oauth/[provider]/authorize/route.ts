@@ -13,7 +13,7 @@ const OAUTH_CONFIGS: Record<string, {
   github: {
     authorization_url: 'https://github.com/login/oauth/authorize',
     client_id_env: 'GITHUB_OAUTH_CLIENT_ID',
-    scopes: ['repo', 'read:org', 'read:user'],
+    scopes: ['repo', 'read:org', 'read:user', 'workflow'],
   },
 };
 

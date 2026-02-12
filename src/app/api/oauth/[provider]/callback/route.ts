@@ -181,9 +181,12 @@ export async function GET(
       },
     });
 
-    // Redirect back to map with success indicator
+    // Redirect: if first-time connection, offer repo linking; otherwise back to map
+    const redirectUrl = oauthState.redirect_url.includes('/service-map')
+      ? `${oauthState.redirect_url}?oauth_success=${provider}&show_repo_selector=true`
+      : `${oauthState.redirect_url}?oauth_success=${provider}`;
     return NextResponse.redirect(
-      new URL(`${oauthState.redirect_url}?oauth_success=${provider}`, request.nextUrl.origin)
+      new URL(redirectUrl, request.nextUrl.origin)
     );
   } catch (err) {
     console.error('OAuth callback error:', err);

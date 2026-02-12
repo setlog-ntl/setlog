@@ -16,7 +16,11 @@ export type AuditAction =
   | 'service_account.connect_oauth'
   | 'service_account.connect_api_key'
   | 'service_account.disconnect'
-  | 'service_account.verify';
+  | 'service_account.verify'
+  | 'github.repo_link'
+  | 'github.repo_unlink'
+  | 'github.secrets_push'
+  | 'github.auto_sync';
 
 interface AuditLogEntry {
   action: AuditAction;

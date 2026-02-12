@@ -74,6 +74,7 @@ interface ServiceNodeData {
   viewMode?: ViewMode;
   connectionCount?: number;
   accountStatus?: ServiceAccountStatus;
+  githubSyncStatus?: 'synced' | 'syncing' | 'error' | null;
   [key: string]: unknown;
 }
 
@@ -159,6 +160,28 @@ function ServiceNode({ data }: NodeProps) {
           }
         >
           {d.accountStatus === 'active' ? '🔗' : '⚠'}
+        </span>
+      )}
+
+      {/* GitHub 동기화 상태 (bottom-right) */}
+      {d.githubSyncStatus && (
+        <span
+          className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-background flex items-center justify-center text-[7px] ${
+            d.githubSyncStatus === 'synced'
+              ? 'bg-blue-500 text-white'
+              : d.githubSyncStatus === 'syncing'
+                ? 'bg-yellow-500 text-white animate-pulse'
+                : 'bg-red-500 text-white'
+          }`}
+          title={
+            d.githubSyncStatus === 'synced'
+              ? 'GitHub 동기화 완료'
+              : d.githubSyncStatus === 'syncing'
+                ? '동기화 중...'
+                : '동기화 오류'
+          }
+        >
+          {d.githubSyncStatus === 'synced' ? '⇄' : d.githubSyncStatus === 'syncing' ? '⟳' : '!'}
         </span>
       )}
 

@@ -22,8 +22,10 @@ import {
 } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Download, Plus, Trash2, Eye, EyeOff, Pencil } from 'lucide-react';
+import { Download, Plus, Trash2, Eye, EyeOff, Pencil, GitBranch } from 'lucide-react';
 import { EnvImportDialog } from '@/components/service/env-import-dialog';
+import { SecretsSyncPanel } from '@/components/github/secrets-sync-panel';
+import { useLinkedRepos } from '@/lib/queries/github';
 import type { Environment, EnvironmentVariable } from '@/types';
 
 const envLabels: Record<Environment, string> = {
@@ -43,6 +45,8 @@ export default function ProjectEnvPage() {
   const decryptEnvVar = useDecryptEnvVar();
   const updateEnvVar = useUpdateEnvVar(projectId);
 
+  const { data: linkedRepos = [] } = useLinkedRepos(projectId);
+  const [showGitHubSync, setShowGitHubSync] = useState(false);
   const [activeEnv, setActiveEnv] = useState<Environment>('development');
   const [decryptedValues, setDecryptedValues] = useState<Record<string, string>>({});
   const [showValues, setShowValues] = useState<Record<string, boolean>>({});
@@ -178,6 +182,19 @@ export default function ProjectEnvPage() {
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">환경변수 관리</h2>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setShowGitHubSync(!showGitHubSync)}
+            className={showGitHubSync ? 'border-primary' : ''}
+          >
+            <GitBranch className="mr-2 h-4 w-4" />
+            GitHub 동기화
+            {linkedRepos.length > 0 && (
+              <Badge variant="secondary" className="ml-2 text-xs">
+                {linkedRepos.length}
+              </Badge>
+            )}
+          </Button>
           <EnvImportDialog
             onImport={async (vars) => {
               const res = await fetch('/api/env/bulk', {
@@ -258,6 +275,10 @@ export default function ProjectEnvPage() {
           </Dialog>
         </div>
       </div>
+
+      {showGitHubSync && (
+        <SecretsSyncPanel projectId={projectId} />
+      )}
 
       <Tabs value={activeEnv} onValueChange={(v) => setActiveEnv(v as Environment)}>
         <TabsList>

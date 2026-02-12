@@ -38,4 +38,10 @@ export const queryKeys = {
     my: ['packages', 'my'] as const,
     installations: (projectId: string) => ['packages', 'installations', projectId] as const,
   },
+  github: {
+    repos: (projectId: string) => ['github', 'repos', projectId] as const,
+    linkedRepos: (projectId: string) => ['github', 'linked-repos', projectId] as const,
+    secrets: (projectId: string, owner: string, repo: string) =>
+      ['github', 'secrets', projectId, owner, repo] as const,
+  },
 } as const;

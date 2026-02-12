@@ -12,8 +12,10 @@ import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProject, useUpdateProject, useDeleteProject } from '@/lib/queries/projects';
-import { Save, Trash2, Users, UserPlus, Shield, Edit, Eye } from 'lucide-react';
+import { Save, Trash2, Users, UserPlus, Shield, Edit, Eye, GitBranch, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLinkedRepos, useUnlinkRepo } from '@/lib/queries/github';
+import { RepoSelector } from '@/components/github/repo-selector';
 
 const roleLabels: Record<string, string> = {
   admin: '관리자',
@@ -258,6 +260,9 @@ export default function ProjectSettingsPage() {
         </CardContent>
       </Card>
 
+      {/* GitHub Integration */}
+      <GitHubSettingsCard projectId={projectId} />
+
       <Separator />
 
       {/* Danger Zone */}
@@ -276,5 +281,81 @@ export default function ProjectSettingsPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// ---------- GitHub Settings ----------
+
+function GitHubSettingsCard({ projectId }: { projectId: string }) {
+  const { data: linkedRepos = [], isLoading } = useLinkedRepos(projectId);
+  const unlinkRepo = useUnlinkRepo(projectId);
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <GitBranch className="h-5 w-5" />
+          <CardTitle>GitHub 연결</CardTitle>
+        </div>
+        <CardDescription>프로젝트에 연결된 GitHub 레포를 관리합니다</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {isLoading ? (
+          <Skeleton className="h-16" />
+        ) : linkedRepos.length === 0 ? (
+          <div className="text-center py-6 text-muted-foreground">
+            <GitBranch className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">연결된 GitHub 레포가 없습니다</p>
+            <p className="text-xs mb-3">레포를 연결하면 환경변수를 GitHub Secrets로 동기화할 수 있습니다</p>
+            <RepoSelector projectId={projectId} />
+          </div>
+        ) : (
+          <>
+            <div className="space-y-2">
+              {linkedRepos.map((repo) => (
+                <div key={repo.id} className="flex items-center justify-between p-3 rounded-lg border">
+                  <div>
+                    <p className="text-sm font-medium flex items-center gap-2">
+                      <GitBranch className="h-3.5 w-3.5" />
+                      {repo.repo_full_name}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      {repo.auto_sync_enabled && (
+                        <Badge variant="secondary" className="text-[10px]">
+                          <RefreshCw className="h-2.5 w-2.5 mr-1" />
+                          자동 동기화
+                        </Badge>
+                      )}
+                      {repo.last_synced_at && (
+                        <span className="text-[10px] text-muted-foreground">
+                          마지막: {new Date(repo.last_synced_at).toLocaleString('ko-KR')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    onClick={() => {
+                      if (confirm(`${repo.repo_full_name} 연결을 해제하시겠습니까?`)) {
+                        unlinkRepo.mutate(repo.id, {
+                          onSuccess: () => toast.success('레포 연결 해제됨'),
+                          onError: () => toast.error('연결 해제 실패'),
+                        });
+                      }
+                    }}
+                    disabled={unlinkRepo.isPending}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <RepoSelector projectId={projectId} />
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }
