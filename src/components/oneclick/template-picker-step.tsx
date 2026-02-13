@@ -7,19 +7,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CheckCircle2, Lock } from 'lucide-react';
+import { CheckCircle2, Lock, Loader2, Rocket } from 'lucide-react';
 import { useLocaleStore } from '@/stores/locale-store';
 import type { HomepageTemplate } from '@/lib/queries/oneclick';
 
 interface TemplatePickerStepProps {
   templates: HomepageTemplate[];
   isLoading: boolean;
+  isDeploying?: boolean;
   onNext: (data: { templateId: string; siteName: string }) => void;
 }
 
 const SITE_NAME_REGEX = /^[a-z0-9][a-z0-9-]*[a-z0-9]$/;
 
-export function TemplatePickerStep({ templates, isLoading, onNext }: TemplatePickerStepProps) {
+export function TemplatePickerStep({ templates, isLoading, isDeploying = false, onNext }: TemplatePickerStepProps) {
   const { locale } = useLocaleStore();
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [siteName, setSiteName] = useState('');
@@ -144,8 +145,18 @@ export function TemplatePickerStep({ templates, isLoading, onNext }: TemplatePic
 
       {/* Deploy button */}
       <div className="flex justify-end">
-        <Button onClick={handleNext} disabled={!canProceed} size="lg">
-          {locale === 'ko' ? '이 템플릿으로 배포' : 'Deploy This Template'}
+        <Button onClick={handleNext} disabled={!canProceed || isDeploying} size="lg">
+          {isDeploying ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {locale === 'ko' ? '배포 진행 중...' : 'Deploying...'}
+            </>
+          ) : (
+            <>
+              <Rocket className="mr-2 h-4 w-4" />
+              {locale === 'ko' ? '이 템플릿으로 배포' : 'Deploy This Template'}
+            </>
+          )}
         </Button>
       </div>
     </div>

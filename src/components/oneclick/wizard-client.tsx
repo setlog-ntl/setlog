@@ -174,6 +174,7 @@ export function OneclickWizardClient({ isAuthenticated }: OneclickWizardClientPr
         <TemplatePickerStep
           templates={templates}
           isLoading={templatesLoading}
+          isDeploying={isDeploying}
           onNext={handleDeploy}
         />
       )}
