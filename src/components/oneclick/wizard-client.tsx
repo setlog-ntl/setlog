@@ -104,6 +104,16 @@ export function OneclickWizardClient({ isAuthenticated }: OneclickWizardClientPr
     await executeDeploy(data);
   }, [isAuthenticated, isGitHubConnected, executeDeploy]);
 
+  // 에러 발생 시 재시도 (처음으로 돌아가기)
+  const handleRetry = useCallback(() => {
+    setCurrentStep(0);
+    setDeployId(null);
+    setProjectId(null);
+    setIsDeploying(false);
+    setPendingDeploy(null);
+    deployPagesMutation.reset();
+  }, [deployPagesMutation]);
+
   // Auto-deploy after GitHub connection if we have pending data
   const handleGitHubConnected = useCallback(async () => {
     if (pendingDeploy) {
@@ -198,6 +208,7 @@ export function OneclickWizardClient({ isAuthenticated }: OneclickWizardClientPr
           isLoading={isDeploying && statusLoading}
           error={statusError || (deployPagesMutation.error as Error) || null}
           projectId={projectId}
+          onRetry={handleRetry}
         />
       )}
     </div>
