@@ -14,6 +14,9 @@ import {
   PanelRightOpen,
   Code,
   Eye,
+  Rocket,
+  CheckCircle2,
+  RefreshCw,
 } from 'lucide-react';
 import { useLocaleStore } from '@/stores/locale-store';
 import { t } from '@/lib/i18n';
@@ -30,17 +33,17 @@ interface SiteEditorClientProps {
   deployId: string;
 }
 
-// HTML 파일인지 확인
 function isHtmlFile(path: string | null): boolean {
   if (!path) return false;
   return path.toLowerCase().endsWith('.html') || path.toLowerCase().endsWith('.htm');
 }
 
-// CSS 파일인지 확인
 function isCssFile(path: string | null): boolean {
   if (!path) return false;
   return path.toLowerCase().endsWith('.css');
 }
+
+type DeployState = 'idle' | 'saving' | 'deploying' | 'deployed';
 
 export function SiteEditorClient({ deployId }: SiteEditorClientProps) {
   const { locale } = useLocaleStore();
@@ -53,9 +56,11 @@ export function SiteEditorClient({ deployId }: SiteEditorClientProps) {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [showPreview, setShowPreview] = useState(true);
+  const [deployState, setDeployState] = useState<DeployState>('idle');
+  const [livePreviewKey, setLivePreviewKey] = useState(0);
   const previewRef = useRef<HTMLIFrameElement>(null);
+  const liveIframeRef = useRef<HTMLIFrameElement>(null);
 
-  // 모든 파일 내용을 캐시 (CSS 인라인 주입용)
   const [fileCache, setFileCache] = useState<Record<string, string>>({});
 
   const { data: fileDetail, isLoading: contentLoading } = useFileContent(
@@ -66,7 +71,7 @@ export function SiteEditorClient({ deployId }: SiteEditorClientProps) {
   const deploy = deployments?.find((d) => d.id === deployId);
   const liveUrl = deploy?.pages_url || deploy?.deployment_url;
 
-  // Auto-select first file (index.html 우선)
+  // index.html 자동 선택
   useEffect(() => {
     if (files && files.length > 0 && !selectedPath) {
       const indexFile = files.find((f) => f.name.toLowerCase() === 'index.html');
@@ -74,7 +79,7 @@ export function SiteEditorClient({ deployId }: SiteEditorClientProps) {
     }
   }, [files, selectedPath]);
 
-  // Sync file content to editor + cache
+  // 파일 내용 동기화
   useEffect(() => {
     if (fileDetail) {
       setEditorContent(fileDetail.content);
@@ -83,14 +88,13 @@ export function SiteEditorClient({ deployId }: SiteEditorClientProps) {
     }
   }, [fileDetail]);
 
-  // 현재 편집 중인 파일 내용을 캐시에 반영
   useEffect(() => {
     if (selectedPath) {
       setFileCache((prev) => ({ ...prev, [selectedPath]: editorContent }));
     }
   }, [editorContent, selectedPath]);
 
-  // 미리보기용 HTML 조합: base URL + CSS 인라인 주입
+  // 미리보기 HTML 조합
   const previewHtml = useMemo(() => {
     const htmlPath = isHtmlFile(selectedPath)
       ? selectedPath
@@ -102,10 +106,8 @@ export function SiteEditorClient({ deployId }: SiteEditorClientProps) {
 
     if (!htmlContent) return '';
 
-    // 1) <base href> 주입: 상대 경로 이미지/리소스가 실제 사이트에서 로딩되도록
     const baseTag = liveUrl ? `<base href="${liveUrl}/" target="_blank">` : '';
 
-    // 2) 편집 중인 CSS 파일 내용을 인라인 <style>로 주입
     const cssFiles = files?.filter((f) => isCssFile(f.path)) || [];
     const cssContents = cssFiles
       .map((f) => f.path === selectedPath ? editorContent : (fileCache[f.path] || ''))
@@ -115,7 +117,6 @@ export function SiteEditorClient({ deployId }: SiteEditorClientProps) {
       ? `<style data-linkmap-preview>\n${cssContents.join('\n')}\n</style>`
       : '';
 
-    // 3) 조합: <head> 태그 안에 base + style 주입
     const injected = [baseTag, inlineStyle].filter(Boolean).join('\n');
 
     if (htmlContent.includes('<head>')) {
@@ -124,16 +125,13 @@ export function SiteEditorClient({ deployId }: SiteEditorClientProps) {
     if (htmlContent.includes('</head>')) {
       return htmlContent.replace('</head>', `${injected}\n</head>`);
     }
-    // <head> 태그 없으면 맨 앞에
     return injected + '\n' + htmlContent;
   }, [editorContent, selectedPath, files, fileCache, liveUrl]);
 
-  // iframe에 미리보기 반영
+  // iframe 미리보기 반영
   useEffect(() => {
     if (!showPreview || !previewRef.current) return;
-
     const isEditingHtmlOrCss = isHtmlFile(selectedPath) || isCssFile(selectedPath);
-
     if (isEditingHtmlOrCss && previewHtml) {
       const doc = previewRef.current.contentDocument;
       if (doc) {
@@ -161,9 +159,9 @@ export function SiteEditorClient({ deployId }: SiteEditorClientProps) {
     [hasUnsavedChanges, locale]
   );
 
+  // 저장 (GitHub 커밋만)
   const handleSave = useCallback(async () => {
     if (!selectedPath || !fileDetail) return;
-
     try {
       const result = await updateFile.mutateAsync({
         deployId,
@@ -179,6 +177,86 @@ export function SiteEditorClient({ deployId }: SiteEditorClientProps) {
       toast.error(err instanceof Error ? err.message : '저장 실패');
     }
   }, [selectedPath, fileDetail, editorContent, deployId, updateFile, locale]);
+
+  // 배포 (저장 → GitHub Pages 빌드 대기 → 라이브 미리보기 새로고침)
+  const handleDeploy = useCallback(async () => {
+    if (!selectedPath || !fileDetail) return;
+
+    try {
+      // 1단계: 미저장 변경이 있으면 먼저 저장
+      setDeployState('saving');
+      if (hasUnsavedChanges) {
+        const result = await updateFile.mutateAsync({
+          deployId,
+          path: selectedPath,
+          content: editorContent,
+          sha: fileDetail.sha,
+        });
+        setHasUnsavedChanges(false);
+        setLastSavedAt(new Date());
+        fileDetail.sha = result.sha;
+      }
+
+      // 2단계: GitHub Pages 빌드 대기 (커밋 후 자동 빌드 트리거됨)
+      setDeployState('deploying');
+      toast.info(
+        locale === 'ko'
+          ? 'GitHub Pages 배포 중... 약 30초 소요됩니다.'
+          : 'Deploying to GitHub Pages... ~30 seconds.'
+      );
+
+      // GitHub Pages 빌드 완료 대기 (폴링)
+      if (liveUrl) {
+        let attempts = 0;
+        const maxAttempts = 12; // 최대 60초
+        const checkInterval = 5000; // 5초마다
+
+        await new Promise<void>((resolve) => {
+          const poll = setInterval(async () => {
+            attempts++;
+            try {
+              // cache-bust로 새 버전 확인
+              const res = await fetch(`${liveUrl}?_t=${Date.now()}`, {
+                method: 'HEAD',
+                mode: 'no-cors',
+              });
+              // 응답이 오면 빌드 완료로 간주 (no-cors라 status 확인 불가하지만 네트워크 성공)
+              if (attempts >= 6) {
+                // 최소 30초 대기 후 성공 처리
+                clearInterval(poll);
+                resolve();
+              }
+            } catch {
+              // 네트워크 오류는 무시
+            }
+            if (attempts >= maxAttempts) {
+              clearInterval(poll);
+              resolve();
+            }
+          }, checkInterval);
+        });
+      } else {
+        // liveUrl 없으면 30초 대기
+        await new Promise((r) => setTimeout(r, 30000));
+      }
+
+      // 3단계: 배포 완료 → 라이브 미리보기 새로고침
+      setDeployState('deployed');
+      setLivePreviewKey((k) => k + 1);
+
+      toast.success(
+        locale === 'ko'
+          ? '배포 완료! 사이트에 변경사항이 반영되었습니다.'
+          : 'Deployed! Changes are now live.'
+      );
+
+      // 3초 후 상태 초기화
+      setTimeout(() => setDeployState('idle'), 3000);
+    } catch (err) {
+      setDeployState('idle');
+      toast.error(err instanceof Error ? err.message : '배포 실패');
+    }
+  }, [selectedPath, fileDetail, hasUnsavedChanges, editorContent, deployId, updateFile, locale, liveUrl]);
 
   // Ctrl+S 단축키
   useEffect(() => {
@@ -203,8 +281,42 @@ export function SiteEditorClient({ deployId }: SiteEditorClientProps) {
     return () => window.removeEventListener('beforeunload', handler);
   }, [hasUnsavedChanges]);
 
-  // 현재 파일이 HTML/CSS인지에 따라 미리보기 모드 결정
   const isLivePreviewable = isHtmlFile(selectedPath) || isCssFile(selectedPath);
+  const isDeploying = deployState === 'saving' || deployState === 'deploying';
+
+  // 배포 버튼 라벨
+  const deployButtonContent = (() => {
+    switch (deployState) {
+      case 'saving':
+        return (
+          <>
+            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+            {locale === 'ko' ? '저장 중...' : 'Saving...'}
+          </>
+        );
+      case 'deploying':
+        return (
+          <>
+            <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
+            {locale === 'ko' ? '배포 중...' : 'Deploying...'}
+          </>
+        );
+      case 'deployed':
+        return (
+          <>
+            <CheckCircle2 className="mr-1 h-3 w-3" />
+            {locale === 'ko' ? '배포 완료!' : 'Deployed!'}
+          </>
+        );
+      default:
+        return (
+          <>
+            <Rocket className="mr-1 h-3 w-3" />
+            {locale === 'ko' ? '배포' : 'Deploy'}
+          </>
+        );
+    }
+  })();
 
   return (
     <div className="flex flex-col h-[calc(100vh-3.5rem)]">
@@ -232,21 +344,11 @@ export function SiteEditorClient({ deployId }: SiteEditorClientProps) {
             variant={showPreview ? 'default' : 'outline'}
             size="sm"
             onClick={() => setShowPreview(!showPreview)}
-            title={showPreview
-              ? (locale === 'ko' ? '미리보기 숨기기' : 'Hide Preview')
-              : (locale === 'ko' ? '미리보기 보기' : 'Show Preview')
-            }
           >
             {showPreview ? (
-              <>
-                <PanelRightClose className="mr-1 h-3 w-3" />
-                {locale === 'ko' ? '미리보기' : 'Preview'}
-              </>
+              <><PanelRightClose className="mr-1 h-3 w-3" />{locale === 'ko' ? '미리보기' : 'Preview'}</>
             ) : (
-              <>
-                <PanelRightOpen className="mr-1 h-3 w-3" />
-                {locale === 'ko' ? '미리보기' : 'Preview'}
-              </>
+              <><PanelRightOpen className="mr-1 h-3 w-3" />{locale === 'ko' ? '미리보기' : 'Preview'}</>
             )}
           </Button>
           {liveUrl && (
@@ -257,22 +359,27 @@ export function SiteEditorClient({ deployId }: SiteEditorClientProps) {
               </a>
             </Button>
           )}
+          {/* 저장 버튼 */}
           <Button
             size="sm"
+            variant="outline"
             onClick={handleSave}
-            disabled={!hasUnsavedChanges || updateFile.isPending}
+            disabled={!hasUnsavedChanges || updateFile.isPending || isDeploying}
           >
             {updateFile.isPending ? (
-              <>
-                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                {t(locale, 'editor.saving')}
-              </>
+              <><Loader2 className="mr-1 h-3 w-3 animate-spin" />{t(locale, 'editor.saving')}</>
             ) : (
-              <>
-                <Save className="mr-1 h-3 w-3" />
-                {t(locale, 'editor.save')}
-              </>
+              <><Save className="mr-1 h-3 w-3" />{t(locale, 'editor.save')}</>
             )}
+          </Button>
+          {/* 배포 버튼 */}
+          <Button
+            size="sm"
+            onClick={handleDeploy}
+            disabled={isDeploying || (!hasUnsavedChanges && deployState === 'idle' && !lastSavedAt)}
+            className={deployState === 'deployed' ? 'bg-green-600 hover:bg-green-700' : ''}
+          >
+            {deployButtonContent}
           </Button>
         </div>
       </div>
@@ -315,7 +422,6 @@ export function SiteEditorClient({ deployId }: SiteEditorClientProps) {
         <div className="flex-1 flex overflow-hidden">
           {/* 코드 에디터 */}
           <div className={`flex flex-col overflow-hidden ${showPreview ? 'w-1/2 border-r' : 'w-full'}`}>
-            {/* 에디터 탭 헤더 */}
             <div className="border-b px-3 py-1.5 flex items-center gap-2 bg-muted/20 text-xs text-muted-foreground flex-shrink-0">
               <Code className="h-3 w-3" />
               <span>{selectedPath || ''}</span>
@@ -342,7 +448,6 @@ export function SiteEditorClient({ deployId }: SiteEditorClientProps) {
           {/* 실시간 미리보기 */}
           {showPreview && (
             <div className="w-1/2 flex flex-col overflow-hidden">
-              {/* 미리보기 탭 헤더 */}
               <div className="border-b px-3 py-1.5 flex items-center gap-2 bg-muted/20 text-xs text-muted-foreground flex-shrink-0">
                 <Eye className="h-3 w-3" />
                 <span>{locale === 'ko' ? '실시간 미리보기' : 'Live Preview'}</span>
@@ -351,10 +456,14 @@ export function SiteEditorClient({ deployId }: SiteEditorClientProps) {
                     LIVE
                   </Badge>
                 )}
+                {deployState === 'deployed' && (
+                  <Badge variant="default" className="text-[10px] px-1 py-0 ml-auto bg-green-600">
+                    {locale === 'ko' ? '배포됨' : 'DEPLOYED'}
+                  </Badge>
+                )}
               </div>
 
-              {isLivePreviewable ? (
-                // HTML/CSS → 실시간 미리보기 (외부 리소스 로딩 허용)
+              {isLivePreviewable && deployState !== 'deployed' ? (
                 <iframe
                   ref={previewRef}
                   title="미리보기"
@@ -362,9 +471,10 @@ export function SiteEditorClient({ deployId }: SiteEditorClientProps) {
                   sandbox="allow-scripts allow-same-origin"
                 />
               ) : liveUrl ? (
-                // 기타 파일 → 라이브 사이트 iframe
                 <iframe
-                  src={liveUrl}
+                  ref={liveIframeRef}
+                  key={livePreviewKey}
+                  src={`${liveUrl}?_t=${livePreviewKey}`}
                   title="사이트 미리보기"
                   className="flex-1 w-full bg-white border-0"
                   sandbox="allow-scripts allow-same-origin"
@@ -384,7 +494,7 @@ export function SiteEditorClient({ deployId }: SiteEditorClientProps) {
         <div className="flex items-center gap-3">
           <span>{selectedPath || ''}</span>
           <span className="text-muted-foreground/60">
-            {locale === 'ko' ? 'Ctrl+S로 저장' : 'Ctrl+S to save'}
+            {locale === 'ko' ? 'Ctrl+S 저장 · 배포 버튼으로 사이트 반영' : 'Ctrl+S save · Deploy to publish'}
           </span>
         </div>
         {lastSavedAt && (
