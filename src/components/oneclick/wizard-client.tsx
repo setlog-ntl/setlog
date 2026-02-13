@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { AuthGateStep } from './auth-gate-step';
 import { GitHubConnectStep } from './github-connect-step';
 import { TemplatePickerStep } from './template-picker-step';
 import { DeployStep } from './deploy-step';
@@ -10,18 +11,30 @@ import { useQuery } from '@tanstack/react-query';
 import { useLocaleStore } from '@/stores/locale-store';
 import { toast } from 'sonner';
 
-const STEPS = [
-  { key: 'github', number: 1 },
-  { key: 'template', number: 2 },
-  { key: 'deploy', number: 3 },
-] as const;
+interface OneclickWizardClientProps {
+  isAuthenticated: boolean;
+}
 
-export function OneclickWizardClient() {
+export function OneclickWizardClient({ isAuthenticated }: OneclickWizardClientProps) {
   const { locale } = useLocaleStore();
-  const [currentStep, setCurrentStep] = useState(0);
+
+  // Steps: auth(0) → github(1) → template(2) → deploy(3)
+  // If authenticated, skip auth step (start at 1)
+  const baseStep = isAuthenticated ? 1 : 0;
+  const [currentStep, setCurrentStep] = useState(baseStep);
   const [deployId, setDeployId] = useState<string | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [isDeploying, setIsDeploying] = useState(false);
+
+  // Detect ?oauth_success=github from URL → auto-advance past GitHub step
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('oauth_success') === 'github') {
+      setCurrentStep(2); // skip to template step
+      // Clean up URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
 
   // Data fetching
   const { data: templates = [], isLoading: templatesLoading } = useHomepageTemplates();
@@ -29,10 +42,10 @@ export function OneclickWizardClient() {
   const deployMutation = useDeployToVercel();
   const { data: deployStatus, isLoading: statusLoading, error: statusError } = useDeployStatus(
     deployId,
-    currentStep === 2
+    currentStep === 3
   );
 
-  // Check GitHub connection via a dedicated lightweight endpoint
+  // Check GitHub connection (only when authenticated)
   const { data: githubAccount, isLoading: githubLoading } = useQuery({
     queryKey: ['github-account-check'],
     queryFn: async () => {
@@ -41,11 +54,30 @@ export function OneclickWizardClient() {
       const data = await res.json();
       return data.account || null;
     },
+    enabled: isAuthenticated,
   });
 
-  const stepLabels = locale === 'ko'
-    ? ['GitHub 연결', '템플릿 선택', '배포']
-    : ['Connect GitHub', 'Choose Template', 'Deploy'];
+  // Step definitions based on auth state
+  const steps = isAuthenticated
+    ? [
+        { key: 'github', number: 1 },
+        { key: 'template', number: 2 },
+        { key: 'deploy', number: 3 },
+      ]
+    : [
+        { key: 'auth', number: 0 },
+        { key: 'github', number: 1 },
+        { key: 'template', number: 2 },
+        { key: 'deploy', number: 3 },
+      ];
+
+  const stepLabels = isAuthenticated
+    ? locale === 'ko'
+      ? ['GitHub 연결', '템플릿 선택', '배포']
+      : ['Connect GitHub', 'Choose Template', 'Deploy']
+    : locale === 'ko'
+      ? ['로그인', 'GitHub 연결', '템플릿 선택', '배포']
+      : ['Sign In', 'Connect GitHub', 'Choose Template', 'Deploy'];
 
   const handleDeploy = useCallback(async (data: { templateId: string; siteName: string; vercelToken: string }) => {
     setIsDeploying(true);
@@ -58,7 +90,7 @@ export function OneclickWizardClient() {
 
       setDeployId(forkResult.deploy_id);
       setProjectId(forkResult.project_id);
-      setCurrentStep(2);
+      setCurrentStep(3);
 
       // Step 2: Deploy to Vercel
       await deployMutation.mutateAsync({
@@ -69,11 +101,13 @@ export function OneclickWizardClient() {
       const message = err instanceof Error ? err.message : '배포 중 오류가 발생했습니다';
       toast.error(message);
       if (!deployId) {
-        // If fork failed, stay on step 2
         setIsDeploying(false);
       }
     }
   }, [forkMutation, deployMutation, deployId]);
+
+  // Map currentStep to visible step index for the indicator
+  const visibleStepIndex = steps.findIndex((s) => s.number === currentStep);
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
@@ -94,48 +128,52 @@ export function OneclickWizardClient() {
 
       {/* Step indicator */}
       <div className="flex items-center justify-center gap-2">
-        {STEPS.map((step, idx) => (
+        {steps.map((step, idx) => (
           <div key={step.key} className="flex items-center">
             <div
               className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                idx === currentStep
+                idx === visibleStepIndex
                   ? 'bg-primary text-primary-foreground'
-                  : idx < currentStep
+                  : idx < visibleStepIndex
                     ? 'bg-primary/10 text-primary'
                     : 'bg-muted text-muted-foreground'
               }`}
             >
               <span className="w-5 h-5 rounded-full bg-background/20 flex items-center justify-center text-xs font-bold">
-                {step.number}
+                {idx + 1}
               </span>
               <span className="hidden sm:inline">{stepLabels[idx]}</span>
             </div>
-            {idx < STEPS.length - 1 && (
-              <div className={`w-8 h-0.5 mx-1 ${idx < currentStep ? 'bg-primary' : 'bg-muted'}`} />
+            {idx < steps.length - 1 && (
+              <div className={`w-8 h-0.5 mx-1 ${idx < visibleStepIndex ? 'bg-primary' : 'bg-muted'}`} />
             )}
           </div>
         ))}
       </div>
 
       {/* Step content */}
-      {currentStep === 0 && (
-        <GitHubConnectStep
-          githubAccount={githubAccount}
-          isLoading={githubLoading}
-          onNext={() => setCurrentStep(1)}
-        />
+      {currentStep === 0 && !isAuthenticated && (
+        <AuthGateStep />
       )}
 
       {currentStep === 1 && (
-        <TemplatePickerStep
-          templates={templates}
-          isLoading={templatesLoading}
-          onBack={() => setCurrentStep(0)}
-          onNext={handleDeploy}
+        <GitHubConnectStep
+          githubAccount={githubAccount}
+          isLoading={githubLoading}
+          onNext={() => setCurrentStep(2)}
         />
       )}
 
       {currentStep === 2 && (
+        <TemplatePickerStep
+          templates={templates}
+          isLoading={templatesLoading}
+          onBack={() => setCurrentStep(1)}
+          onNext={handleDeploy}
+        />
+      )}
+
+      {currentStep === 3 && (
         <DeployStep
           status={deployStatus ?? null}
           isLoading={isDeploying && statusLoading}

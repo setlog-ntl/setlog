@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,14 @@ import { GoogleIcon } from '@/components/icons/google-icon';
 
 export default function SignupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+
+  // Safe redirect: must start with / and not contain ://
+  const rawRedirect = searchParams.get('redirect');
+  const redirect = rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.includes('://')
+    ? rawRedirect
+    : '/dashboard';
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -39,7 +46,7 @@ export default function SignupPage() {
       password,
       options: {
         data: { name },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirect)}`,
       },
     });
 
@@ -59,7 +66,7 @@ export default function SignupPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirect)}`,
       },
     });
     if (error) {
@@ -188,7 +195,7 @@ export default function SignupPage() {
         <CardFooter className="justify-center">
           <p className="text-sm text-muted-foreground">
             이미 계정이 있으신가요?{' '}
-            <Link href="/login" className="text-primary hover:underline font-medium">
+            <Link href={redirect !== '/dashboard' ? `/login?redirect=${encodeURIComponent(redirect)}` : '/login'} className="text-primary hover:underline font-medium">
               로그인
             </Link>
           </p>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,14 @@ import { GoogleIcon } from '@/components/icons/google-icon';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+
+  // Safe redirect: must start with / and not contain ://
+  const rawRedirect = searchParams.get('redirect');
+  const redirect = rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.includes('://')
+    ? rawRedirect
+    : '/dashboard';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +42,7 @@ export default function LoginPage() {
       return;
     }
 
-    router.push('/dashboard');
+    router.push(redirect);
     router.refresh();
   };
 
@@ -45,7 +52,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirect)}`,
       },
     });
     if (error) {
@@ -145,7 +152,7 @@ export default function LoginPage() {
         <CardFooter className="justify-center">
           <p className="text-sm text-muted-foreground">
             계정이 없으신가요?{' '}
-            <Link href="/signup" className="text-primary hover:underline font-medium">
+            <Link href={redirect !== '/dashboard' ? `/signup?redirect=${encodeURIComponent(redirect)}` : '/signup'} className="text-primary hover:underline font-medium">
               회원가입
             </Link>
           </p>

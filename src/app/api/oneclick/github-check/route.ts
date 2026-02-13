@@ -2,10 +2,13 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { unauthorizedError } from '@/lib/api/errors';
 import { rateLimit } from '@/lib/rate-limit';
+import { checkHomepageDeployQuota } from '@/lib/quota';
 
 /**
  * GET /api/oneclick/github-check
  * Check if the current user has any active GitHub OAuth connection.
+ * Returns user-level accounts first, then project-level.
+ * Includes quota information for UX.
  */
 export async function GET() {
   const supabase = await createClient();
@@ -23,10 +26,11 @@ export async function GET() {
     .single();
 
   if (!githubService) {
-    return NextResponse.json({ account: null });
+    return NextResponse.json({ account: null, quota: null });
   }
 
   // Find any active GitHub OAuth account for this user
+  // Prefer user-level accounts (project_id IS NULL) first
   const { data: account } = await supabase
     .from('service_accounts')
     .select('id, oauth_provider_user_id, oauth_metadata, status')
@@ -34,11 +38,15 @@ export async function GET() {
     .eq('service_id', githubService.id)
     .eq('connection_type', 'oauth')
     .eq('status', 'active')
+    .order('project_id', { ascending: true, nullsFirst: true })
     .limit(1)
     .single();
 
+  // Get quota info
+  const quota = await checkHomepageDeployQuota(user.id);
+
   if (!account) {
-    return NextResponse.json({ account: null });
+    return NextResponse.json({ account: null, quota });
   }
 
   const metadata = account.oauth_metadata as Record<string, string> | null;
@@ -49,5 +57,6 @@ export async function GET() {
       provider_account_id: metadata?.login || account.oauth_provider_user_id || 'GitHub User',
       status: account.status,
     },
+    quota,
   });
 }

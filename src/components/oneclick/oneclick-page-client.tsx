@@ -19,6 +19,10 @@ const OneclickWizardClient = dynamic(
   }
 );
 
-export function OneclickPageClient() {
-  return <OneclickWizardClient />;
+interface OneclickPageClientProps {
+  isAuthenticated: boolean;
+}
+
+export function OneclickPageClient({ isAuthenticated }: OneclickPageClientProps) {
+  return <OneclickWizardClient isAuthenticated={isAuthenticated} />;
 }

@@ -24,8 +24,8 @@ export function GitHubConnectStep({ githubAccount, isLoading, onNext }: GitHubCo
   const isConnected = githubAccount?.status === 'active';
 
   const handleConnect = () => {
-    // Redirect to existing GitHub OAuth flow
-    window.location.href = '/api/oauth/github/authorize';
+    // Redirect to oneclick-specific GitHub OAuth flow (no project_id needed)
+    window.location.href = '/api/oneclick/oauth/authorize';
   };
 
   if (isLoading) {

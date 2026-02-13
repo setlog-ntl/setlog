@@ -83,6 +83,18 @@
     "finalCtaDesc": "Manage up to 3 projects for free. No credit card required.",
     "ctaOneclick": "Create Your Homepage in 3 Min"
   },
+  "authGate": {
+    "title": "Sign In Required",
+    "description": "Sign in to deploy your homepage. An account will be created automatically if needed.",
+    "email": "Email",
+    "password": "Password",
+    "signIn": "Sign In",
+    "signingIn": "Signing in...",
+    "noAccount": "Don't have an account?",
+    "signUp": "Sign Up",
+    "or": "or",
+    "invalidCredentials": "Invalid email or password."
+  },
   "error": {
     "pageNotFound": "Page Not Found",
     "pageNotFoundDesc": "The page you requested doesn't exist or has been moved.",

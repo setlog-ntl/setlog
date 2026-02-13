@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
 
   let ghQuery = supabase
     .from('service_accounts')
-    .select('id, encrypted_access_token, oauth_provider_user_id, oauth_metadata')
+    .select('id, project_id, encrypted_access_token, encrypted_refresh_token, token_expires_at, oauth_scopes, oauth_provider_user_id, oauth_metadata')
     .eq('user_id', user.id)
     .eq('service_id', githubService.id)
     .eq('connection_type', 'oauth')
@@ -64,7 +64,11 @@ export async function POST(request: NextRequest) {
     ghQuery = ghQuery.eq('id', github_service_account_id);
   }
 
-  const { data: ghAccount } = await ghQuery.limit(1).single();
+  // Prefer user-level accounts (project_id IS NULL) first
+  const { data: ghAccount } = await ghQuery
+    .order('project_id', { ascending: true, nullsFirst: true })
+    .limit(1)
+    .single();
   if (!ghAccount) {
     return apiError('GitHub 계정이 연결되어 있지 않습니다. 먼저 GitHub를 연결해주세요.', 404);
   }
@@ -88,6 +92,29 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (projectError) return serverError(projectError.message);
+
+  // 4.5. If user-level account (project_id = null), create project-level copy
+  let projectServiceAccountId = ghAccount.id;
+  if (!ghAccount.project_id) {
+    const { data: copiedAccount } = await supabase.from('service_accounts').insert({
+      project_id: project.id,
+      service_id: githubService.id,
+      user_id: user.id,
+      connection_type: 'oauth',
+      encrypted_access_token: ghAccount.encrypted_access_token,
+      encrypted_refresh_token: ghAccount.encrypted_refresh_token,
+      token_expires_at: ghAccount.token_expires_at,
+      oauth_scopes: ghAccount.oauth_scopes,
+      oauth_provider_user_id: ghAccount.oauth_provider_user_id,
+      oauth_metadata: ghAccount.oauth_metadata,
+      status: 'active',
+      last_verified_at: new Date().toISOString(),
+    }).select('id').single();
+
+    if (copiedAccount) {
+      projectServiceAccountId = copiedAccount.id;
+    }
+  }
 
   // 5. Fork the template repo on GitHub
   let forkResult;
@@ -114,7 +141,7 @@ export async function POST(request: NextRequest) {
   // 6. Link repo to project
   await supabase.from('project_github_repos').insert({
     project_id: project.id,
-    service_account_id: ghAccount.id,
+    service_account_id: projectServiceAccountId,
     owner: forkResult.owner.login,
     repo_name: forkResult.name,
     repo_full_name: forkResult.full_name,

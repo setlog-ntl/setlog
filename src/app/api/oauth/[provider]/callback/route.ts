@@ -140,30 +140,68 @@ export async function GET(
       ? new Date(Date.now() + expiresIn * 1000).toISOString()
       : null;
 
-    // Upsert service account
-    const { data: account, error } = await adminClient
-      .from('service_accounts')
-      .upsert(
-        {
-          project_id: oauthState.project_id,
-          service_id: service.id,
-          user_id: user.id,
-          connection_type: 'oauth',
-          encrypted_access_token: encryptedAccessToken,
-          encrypted_refresh_token: encryptedRefreshToken,
-          token_expires_at: tokenExpiresAt,
-          oauth_scopes: scopes,
-          oauth_provider_user_id: providerUserId,
-          oauth_metadata: oauthMetadata,
-          status: 'active',
-          last_verified_at: new Date().toISOString(),
-          error_message: null,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'project_id,service_id' }
-      )
-      .select('id')
-      .single();
+    // Save service account
+    const isOneclick = oauthState.flow_context === 'oneclick';
+    const accountData = {
+      service_id: service.id,
+      user_id: user.id,
+      connection_type: 'oauth' as const,
+      encrypted_access_token: encryptedAccessToken,
+      encrypted_refresh_token: encryptedRefreshToken,
+      token_expires_at: tokenExpiresAt,
+      oauth_scopes: scopes,
+      oauth_provider_user_id: providerUserId,
+      oauth_metadata: oauthMetadata,
+      status: 'active' as const,
+      last_verified_at: new Date().toISOString(),
+      error_message: null,
+      updated_at: new Date().toISOString(),
+    };
+
+    let account: { id: string } | null = null;
+    let error: unknown = null;
+
+    if (isOneclick) {
+      // User-level account (project_id = NULL): can't use upsert with NULL in onConflict
+      const { data: existing } = await adminClient
+        .from('service_accounts')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('service_id', service.id)
+        .is('project_id', null)
+        .single();
+
+      if (existing) {
+        const { data, error: updateErr } = await adminClient
+          .from('service_accounts')
+          .update(accountData)
+          .eq('id', existing.id)
+          .select('id')
+          .single();
+        account = data;
+        error = updateErr;
+      } else {
+        const { data, error: insertErr } = await adminClient
+          .from('service_accounts')
+          .insert({ ...accountData, project_id: null })
+          .select('id')
+          .single();
+        account = data;
+        error = insertErr;
+      }
+    } else {
+      // Project-level account: standard upsert
+      const { data, error: upsertErr } = await adminClient
+        .from('service_accounts')
+        .upsert(
+          { ...accountData, project_id: oauthState.project_id },
+          { onConflict: 'project_id,service_id' }
+        )
+        .select('id')
+        .single();
+      account = data;
+      error = upsertErr;
+    }
 
     if (error) {
       return NextResponse.redirect(
@@ -183,10 +221,15 @@ export async function GET(
       },
     });
 
-    // Redirect: if first-time connection, offer repo linking; otherwise back to map
-    const redirectUrl = oauthState.redirect_url.includes('/service-map')
-      ? `${oauthState.redirect_url}?oauth_success=${provider}&show_repo_selector=true`
-      : `${oauthState.redirect_url}?oauth_success=${provider}`;
+    // Redirect based on flow context
+    let redirectUrl: string;
+    if (isOneclick) {
+      redirectUrl = `/oneclick?oauth_success=${provider}`;
+    } else if (oauthState.redirect_url.includes('/service-map')) {
+      redirectUrl = `${oauthState.redirect_url}?oauth_success=${provider}&show_repo_selector=true`;
+    } else {
+      redirectUrl = `${oauthState.redirect_url}?oauth_success=${provider}`;
+    }
     return NextResponse.redirect(
       new URL(redirectUrl, request.nextUrl.origin)
     );

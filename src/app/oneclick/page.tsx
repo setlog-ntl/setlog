@@ -31,7 +31,7 @@ export default async function OneclickPage() {
     <div className="min-h-screen flex flex-col">
       <Header profile={profile} />
       <main className="flex-1 container py-8">
-        <OneclickPageClient />
+        <OneclickPageClient isAuthenticated={!!profile} />
       </main>
       <Footer />
     </div>
