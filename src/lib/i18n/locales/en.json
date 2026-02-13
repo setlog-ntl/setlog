@@ -21,7 +21,8 @@
   "nav": {
     "serviceCatalog": "Service Catalog",
     "pricing": "Pricing",
-    "oneclick": "One-Click Deploy"
+    "oneclick": "One-Click Deploy",
+    "mySites": "My Sites"
   },
   "dashboard": {
     "title": "My Projects",
@@ -94,6 +95,35 @@
     "signUp": "Sign Up",
     "or": "or",
     "invalidCredentials": "Invalid email or password."
+  },
+  "mySites": {
+    "title": "My Sites",
+    "subtitle": "Manage your deployed sites",
+    "empty": "No deployed sites yet",
+    "emptyDesc": "Create your first site with one-click deploy.",
+    "createFirst": "Create First Site",
+    "visitSite": "Visit Site",
+    "githubRepo": "GitHub Repo",
+    "editSite": "Edit",
+    "deleteSite": "Delete",
+    "deleteConfirm": "Delete this site?",
+    "deleteDesc": "Only the deploy record will be deleted. The GitHub repo and site will remain.",
+    "deleting": "Deleting...",
+    "template": "Template",
+    "deployedAt": "Deployed",
+    "status": "Status"
+  },
+  "editor": {
+    "title": "Edit Site",
+    "save": "Save",
+    "saving": "Saving...",
+    "saved": "Saved",
+    "unsavedChanges": "You have unsaved changes. Leave anyway?",
+    "preview": "Preview",
+    "backToSites": "My Sites",
+    "lastSaved": "Last saved",
+    "loadingFiles": "Loading files...",
+    "noFiles": "No editable files found"
   },
   "error": {
     "pageNotFound": "Page Not Found",

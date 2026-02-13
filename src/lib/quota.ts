@@ -15,7 +15,7 @@ const DEFAULT_QUOTA: PlanQuota = {
   max_env_vars_per_project: 20,
   max_services_per_project: 10,
   max_team_members: 0,
-  max_homepage_deploys: 1,
+  max_homepage_deploys: 999999,
 };
 
 export async function getUserQuota(userId: string): Promise<PlanQuota> {

@@ -146,6 +146,157 @@ export function useDeployToGitHubPages() {
   });
 }
 
+// ---------- Types: Deployment List ----------
+
+export interface HomepageDeploy {
+  id: string;
+  site_name: string;
+  deploy_status: 'pending' | 'creating' | 'building' | 'ready' | 'error' | 'canceled';
+  deploy_method: 'vercel' | 'github_pages';
+  pages_url: string | null;
+  pages_status: string | null;
+  deployment_url: string | null;
+  forked_repo_url: string | null;
+  forked_repo_full_name: string | null;
+  deploy_error: string | null;
+  created_at: string;
+  template_id: string;
+  project_id: string | null;
+  homepage_templates: {
+    id: string;
+    slug: string;
+    name: string;
+    name_ko: string;
+    framework: string;
+    preview_image_url: string | null;
+  } | null;
+}
+
+// ---------- Types: File Editor ----------
+
+export interface GitHubFileInfo {
+  name: string;
+  path: string;
+  type: 'file' | 'dir';
+  size: number;
+  sha: string;
+}
+
+export interface GitHubFileDetail {
+  name: string;
+  path: string;
+  sha: string;
+  content: string;
+  size: number;
+}
+
+// ---------- My Deployments ----------
+
+export function useMyDeployments() {
+  return useQuery({
+    queryKey: queryKeys.oneclick.deployments,
+    queryFn: async (): Promise<HomepageDeploy[]> => {
+      const res = await fetch('/api/oneclick/deployments');
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || '배포 목록 조회 실패');
+      }
+      const data = await res.json();
+      return data.deployments;
+    },
+  });
+}
+
+export function useDeleteDeployment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (deployId: string): Promise<void> => {
+      const res = await fetch(`/api/oneclick/deployments/${deployId}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || '삭제 실패');
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.oneclick.deployments });
+    },
+  });
+}
+
+// ---------- File Editor Hooks ----------
+
+export function useDeployFiles(deployId: string | null) {
+  return useQuery({
+    queryKey: queryKeys.oneclick.files(deployId || ''),
+    queryFn: async (): Promise<GitHubFileInfo[]> => {
+      const res = await fetch(`/api/oneclick/deployments/${deployId}/files`);
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || '파일 목록 조회 실패');
+      }
+      const data = await res.json();
+      return data.files;
+    },
+    enabled: !!deployId,
+  });
+}
+
+export function useFileContent(deployId: string | null, path: string | null) {
+  return useQuery({
+    queryKey: queryKeys.oneclick.fileContent(deployId || '', path || ''),
+    queryFn: async (): Promise<GitHubFileDetail> => {
+      const res = await fetch(
+        `/api/oneclick/deployments/${deployId}/files?path=${encodeURIComponent(path!)}`
+      );
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || '파일 내용 조회 실패');
+      }
+      return res.json();
+    },
+    enabled: !!deployId && !!path,
+  });
+}
+
+export function useUpdateFile() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      deployId: string;
+      path: string;
+      content: string;
+      sha: string;
+      message?: string;
+    }): Promise<{ sha: string }> => {
+      const res = await fetch(`/api/oneclick/deployments/${input.deployId}/files`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          path: input.path,
+          content: input.content,
+          sha: input.sha,
+          message: input.message,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || '파일 저장 실패');
+      }
+      return res.json();
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.oneclick.fileContent(variables.deployId, variables.path),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.oneclick.files(variables.deployId),
+      });
+    },
+  });
+}
+
 // ---------- Status Polling ----------
 
 export function useDeployStatus(deployId: string | null, enabled: boolean = true) {

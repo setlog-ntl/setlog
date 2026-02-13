@@ -12,7 +12,6 @@ import {
   ExternalLink,
   Github,
   LayoutDashboard,
-  ArrowRight,
 } from 'lucide-react';
 import { useLocaleStore } from '@/stores/locale-store';
 import Link from 'next/link';
@@ -174,32 +173,16 @@ export function DeployStep({ status, isLoading, error, projectId }: DeployStepPr
         </Card>
       )}
 
-      {/* Upsell banner for free plan */}
+      {/* My Sites link */}
       {isCompleted && (
-        <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
-          <CardContent className="py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-sm">
-                  {locale === 'ko'
-                    ? '1/1 무료 배포 사용 완료'
-                    : '1/1 free deployment used'}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {locale === 'ko'
-                    ? 'Pro 플랜으로 업그레이드하면 10개 사이트까지 만들 수 있습니다'
-                    : 'Upgrade to Pro to create up to 10 sites'}
-                </p>
-              </div>
-              <Button size="sm" asChild>
-                <Link href="/pricing">
-                  Pro
-                  <ArrowRight className="ml-1 h-3 w-3" />
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="text-center">
+          <Button variant="outline" asChild>
+            <Link href="/my-sites">
+              <LayoutDashboard className="mr-2 h-4 w-4" />
+              {locale === 'ko' ? '내 사이트에서 관리하기' : 'Manage in My Sites'}
+            </Link>
+          </Button>
+        </div>
       )}
     </div>
   );

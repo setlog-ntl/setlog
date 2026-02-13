@@ -26,7 +26,9 @@ export type AuditAction =
   | 'oneclick.deploy_pages'
   | 'oneclick.deploy_success'
   | 'oneclick.deploy_error'
-  | 'admin.setup_templates';
+  | 'admin.setup_templates'
+  | 'oneclick.deploy_delete'
+  | 'oneclick.file_edit';
 
 interface AuditLogEntry {
   action: AuditAction;

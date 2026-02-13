@@ -56,5 +56,8 @@ export const queryKeys = {
   oneclick: {
     templates: ['oneclick', 'templates'] as const,
     status: (deployId: string) => ['oneclick', 'status', deployId] as const,
+    deployments: ['oneclick', 'deployments'] as const,
+    files: (deployId: string) => ['oneclick', 'files', deployId] as const,
+    fileContent: (deployId: string, path: string) => ['oneclick', 'files', deployId, path] as const,
   },
 } as const;
