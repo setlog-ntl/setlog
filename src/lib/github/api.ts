@@ -233,3 +233,66 @@ export async function deleteSecret(
     method: 'DELETE',
   });
 }
+
+// ---------- Repo Management APIs ----------
+
+export async function createRepo(
+  token: string,
+  name: string,
+  description: string,
+  options?: { is_template?: boolean; auto_init?: boolean; has_issues?: boolean }
+): Promise<GitHubRepo> {
+  return githubFetch<GitHubRepo>('/user/repos', {
+    token,
+    method: 'POST',
+    body: {
+      name,
+      description,
+      auto_init: options?.auto_init ?? false,
+      is_template: options?.is_template ?? false,
+      has_issues: options?.has_issues ?? false,
+    },
+  });
+}
+
+export interface GitHubFileContentResult {
+  content: { name: string; path: string; sha: string; html_url: string };
+  commit: { sha: string; message: string };
+}
+
+export async function createOrUpdateFileContent(
+  token: string,
+  owner: string,
+  repo: string,
+  path: string,
+  content: string,
+  message: string,
+  sha?: string
+): Promise<GitHubFileContentResult> {
+  const base64Content = Buffer.from(content).toString('base64');
+  return githubFetch<GitHubFileContentResult>(
+    `/repos/${owner}/${repo}/contents/${path}`,
+    {
+      token,
+      method: 'PUT',
+      body: {
+        message,
+        content: base64Content,
+        ...(sha ? { sha } : {}),
+      },
+    }
+  );
+}
+
+export async function updateRepoSettings(
+  token: string,
+  owner: string,
+  repo: string,
+  settings: { is_template?: boolean; description?: string; homepage?: string; has_pages?: boolean }
+): Promise<GitHubRepo> {
+  return githubFetch<GitHubRepo>(`/repos/${owner}/${repo}`, {
+    token,
+    method: 'PATCH',
+    body: settings,
+  });
+}
