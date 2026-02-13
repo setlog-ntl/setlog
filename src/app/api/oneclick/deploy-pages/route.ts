@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return unauthorizedError();
 
-  const { success } = rateLimit(`oneclick-deploy-pages:${user.id}`, 5, 300_000);
+  const { success } = rateLimit(`oneclick-deploy-pages:${user.id}`, 5, 60_000); // 5 per 1 min
   if (!success) return NextResponse.json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' }, { status: 429 });
 
   const body = await request.json();
@@ -132,6 +132,12 @@ export async function POST(request: NextRequest) {
     if (err instanceof GitHubApiError) {
       if (err.status === 422) {
         return apiError(`'${site_name}' 이름의 레포지토리가 이미 존재합니다. 다른 이름을 사용해주세요.`, 409);
+      }
+      if (err.status === 404) {
+        return apiError(`템플릿 레포지토리를 찾을 수 없습니다 (${template.github_owner}/${template.github_repo}). 관리자에게 문의하세요.`, 404);
+      }
+      if (err.status === 403) {
+        return apiError('GitHub 권한이 부족합니다. GitHub 연결을 해제 후 다시 연결해주세요.', 403);
       }
       return apiError(`GitHub 레포지토리 생성 실패: ${err.message}`, 502);
     }
