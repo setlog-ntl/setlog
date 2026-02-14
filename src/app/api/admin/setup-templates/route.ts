@@ -7,7 +7,7 @@ import { logAudit } from '@/lib/audit';
 import { decrypt } from '@/lib/crypto';
 import {
   createRepo,
-  createOrUpdateFileContent,
+  pushFilesAtomically,
   updateRepoSettings,
   GitHubApiError,
 } from '@/lib/github/api';
@@ -106,7 +106,7 @@ export async function POST() {
           githubToken,
           template.repoName,
           template.description,
-          { auto_init: false, is_template: false }
+          { auto_init: true, is_template: false }
         );
       } catch (err) {
         if (err instanceof GitHubApiError && err.status === 422) {
@@ -121,17 +121,16 @@ export async function POST() {
 
       result.repoUrl = repo.html_url;
 
-      // b. Upload files sequentially (first file creates the initial commit)
-      for (const file of template.files) {
-        await createOrUpdateFileContent(
-          githubToken,
-          githubUsername,
-          template.repoName,
-          file.path,
-          file.content,
-          `Add ${file.path}`
-        );
-      }
+      // b. Push all files as atomic commit (handles non-empty repos)
+      // Small delay to let GitHub finalize repo initialization
+      await new Promise((r) => setTimeout(r, 1000));
+      await pushFilesAtomically(
+        githubToken,
+        githubUsername,
+        template.repoName,
+        template.files,
+        'Initial commit from Linkmap'
+      );
 
       // c. Mark as template repo
       await updateRepoSettings(

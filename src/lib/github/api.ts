@@ -430,6 +430,35 @@ export async function createRef(
   });
 }
 
+export async function getRef(
+  token: string,
+  owner: string,
+  repo: string,
+  ref: string
+): Promise<GitRef | null> {
+  try {
+    return await githubFetch<GitRef>(`/repos/${owner}/${repo}/git/ref/${ref}`, { token });
+  } catch (err) {
+    if (err instanceof GitHubApiError && err.status === 404) return null;
+    throw err;
+  }
+}
+
+export async function updateRef(
+  token: string,
+  owner: string,
+  repo: string,
+  ref: string,
+  sha: string,
+  force: boolean = true
+): Promise<GitRef> {
+  return githubFetch<GitRef>(`/repos/${owner}/${repo}/git/refs/${ref}`, {
+    token,
+    method: 'PATCH',
+    body: { sha, force },
+  });
+}
+
 export async function deleteRepo(
   token: string,
   owner: string,
@@ -443,7 +472,7 @@ export async function deleteRepo(
 
 /**
  * Push multiple files to a repo as a single atomic commit.
- * Works on empty repos (no prior commits).
+ * Handles both empty repos (no prior commits) and non-empty repos (auto_init: true).
  */
 export async function pushFilesAtomically(
   token: string,
@@ -452,6 +481,10 @@ export async function pushFilesAtomically(
   files: { path: string; content: string }[],
   message: string
 ): Promise<{ commitSha: string }> {
+  // 0. Check if repo already has a main branch (non-empty repo)
+  const existingRef = await getRef(token, owner, repo, 'heads/main');
+  const parentSha = existingRef?.object?.sha ?? null;
+
   // 1. Create blobs for all files in parallel
   const blobResults = await Promise.all(
     files.map((file) => createBlob(token, owner, repo, file.content, 'utf-8'))
@@ -468,11 +501,16 @@ export async function pushFilesAtomically(
   // 3. Create tree
   const tree = await createTree(token, owner, repo, treeItems);
 
-  // 4. Create commit (no parents for initial commit)
-  const commit = await createCommit(token, owner, repo, message, tree.sha, []);
+  // 4. Create commit (with parent if non-empty repo)
+  const parents = parentSha ? [parentSha] : [];
+  const commit = await createCommit(token, owner, repo, message, tree.sha, parents);
 
-  // 5. Create ref (main branch)
-  await createRef(token, owner, repo, 'refs/heads/main', commit.sha);
+  // 5. Create or update ref (main branch)
+  if (parentSha) {
+    await updateRef(token, owner, repo, 'heads/main', commit.sha);
+  } else {
+    await createRef(token, owner, repo, 'refs/heads/main', commit.sha);
+  }
 
   return { commitSha: commit.sha };
 }
