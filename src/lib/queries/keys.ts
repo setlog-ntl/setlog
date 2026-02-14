@@ -30,14 +30,6 @@ export const queryKeys = {
   serviceAccounts: {
     byProject: (projectId: string) => ['service-accounts', 'project', projectId] as const,
   },
-  packages: {
-    all: ['packages'] as const,
-    search: (query: string) => ['packages', 'search', query] as const,
-    detail: (slug: string) => ['packages', slug] as const,
-    versions: (slug: string) => ['packages', slug, 'versions'] as const,
-    my: ['packages', 'my'] as const,
-    installations: (projectId: string) => ['packages', 'installations', projectId] as const,
-  },
   github: {
     repos: (projectId: string) => ['github', 'repos', projectId] as const,
     linkedRepos: (projectId: string) => ['github', 'linked-repos', projectId] as const,

@@ -434,20 +434,3 @@ export interface ServiceConnectionConfig {
   verify_url?: string;
   description_ko?: string;
 }
-
-// ============================================
-// Package System Types (re-export)
-// ============================================
-export type {
-  LinkmapConfig,
-  PackageServiceDef,
-  PackageEnvVar,
-  CodeSnippet,
-  SnippetStrategy,
-  Package,
-  PackageVersion,
-  PackageInstallation,
-  PackageWithLatestVersion,
-  PackageDetail,
-  InstallResult,
-} from './package';
