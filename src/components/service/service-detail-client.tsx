@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/accordion';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, ExternalLink, Globe, BookOpen, Github, Clock, Copy, Check } from 'lucide-react';
+import { ServiceIcon } from '@/components/landing/service-icon';
 import { allCategoryLabels, allCategoryEmojis, domainLabels, domainIcons } from '@/lib/constants/service-filters';
 import { DifficultyBadge, DxScoreBadge, FreeTierBadge, VendorLockInBadge, CostEstimateBadge } from './service-badges';
 import type {
@@ -91,8 +92,8 @@ export function ServiceDetailClient({ service, guide, costTiers, dependencies }:
 
       {/* Service header */}
       <div className="flex items-start gap-4">
-        <div className="h-14 w-14 rounded-xl bg-muted flex items-center justify-center text-2xl shrink-0">
-          {allCategoryEmojis[service.category as ServiceCategory] || '🔧'}
+        <div className="h-14 w-14 rounded-xl bg-muted flex items-center justify-center shrink-0">
+          <ServiceIcon serviceId={service.slug} size={32} />
         </div>
         <div className="flex-1">
           <h1 className="text-2xl font-bold">{service.name}</h1>

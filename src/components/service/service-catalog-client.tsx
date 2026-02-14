@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Search, ExternalLink, ArrowRight, LayoutGrid, Settings2, X } from 'lucide-react';
+import { ServiceIcon } from '@/components/landing/service-icon';
 import { domainLabels, domainIcons, allCategoryLabels, allCategoryEmojis, domainCategoryMap } from '@/lib/constants/service-filters';
 import {
   EASY_CATEGORY_ORDER,
@@ -463,8 +464,8 @@ export function ServiceCatalogClient({ services, domains }: ServiceCatalogClient
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-lg shrink-0">
-                            {allCategoryEmojis[service.category as ServiceCategory] || '🔧'}
+                          <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                            <ServiceIcon serviceId={service.slug} size={24} />
                           </div>
                           <div>
                             <CardTitle className="text-base group-hover:text-primary transition-colors">

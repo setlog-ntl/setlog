@@ -39,6 +39,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { DollarSign, ChevronDown as ChevronDownIcon, ChevronUp as ChevronUpIcon } from 'lucide-react';
 import { allCategoryLabels, allCategoryEmojis, domainLabels, domainIcons } from '@/lib/constants/service-filters';
+import { getCategoryStyle } from '@/lib/constants/category-styles';
 import { easyCategoryLabels, easyCategoryEmojis, serviceCategoryToEasy } from '@/lib/constants/easy-categories';
 import { getLayoutedElements } from '@/lib/layout/dagre-layout';
 import { getNeighborhood, isNodeHighlighted, isEdgeHighlighted } from '@/lib/layout/graph-utils';
@@ -67,37 +68,6 @@ const edgeTypes = {
 // Stable empty array to prevent re-renders from default destructuring
 const EMPTY_CONNECTIONS: UserConnection[] = [];
 
-// MiniMap color mapping
-const categoryMiniMapColors: Record<string, string> = {
-  auth: '#a855f7',
-  database: '#3b82f6',
-  deploy: '#22c55e',
-  email: '#eab308',
-  payment: '#f97316',
-  storage: '#06b6d4',
-  monitoring: '#ec4899',
-  ai: '#6366f1',
-  cdn: '#14b8a6',
-  cicd: '#64748b',
-  testing: '#84cc16',
-  sms: '#f59e0b',
-  push: '#f43f5e',
-  chat: '#8b5cf6',
-  search: '#0ea5e9',
-  cms: '#d946ef',
-  analytics: '#10b981',
-  media: '#ef4444',
-  queue: '#f97316',
-  cache: '#eab308',
-  logging: '#78716c',
-  feature_flags: '#71717a',
-  scheduling: '#6366f1',
-  ecommerce: '#10b981',
-  serverless: '#0ea5e9',
-  code_quality: '#22c55e',
-  automation: '#8b5cf6',
-  other: '#9ca3af',
-};
 
 function ServiceMapInner() {
   const params = useParams();
@@ -411,7 +381,7 @@ function ServiceMapInner() {
           width: 16,
           height: 16,
           color: ps.status === 'connected'
-            ? (categoryMiniMapColors[category] || 'var(--chart-2)')
+            ? (getCategoryStyle(category).hexColor || 'var(--chart-2)')
             : ps.status === 'error'
               ? 'var(--destructive)'
               : 'var(--border)',
@@ -664,7 +634,7 @@ function ServiceMapInner() {
     if (node.type === 'app') return 'var(--primary)';
     const d = node.data as Record<string, unknown>;
     const cat = d.category as string;
-    return categoryMiniMapColors[cat] || '#9ca3af';
+    return getCategoryStyle(cat).hexColor;
   }, []);
 
   // 모든 핵심 데이터 로드 완료 대기 (서비스 + 의존성 + 연결)

@@ -17,6 +17,8 @@ import { AddServiceDialog } from '@/components/service/add-service-dialog';
 import { ServiceChecklist } from '@/components/service/service-checklist';
 import { SetupWizard } from '@/components/service/setup-wizard';
 import { Trash2, ExternalLink, Wand2 } from 'lucide-react';
+import { ServiceIcon } from '@/components/landing/service-icon';
+import { allCategoryLabels } from '@/lib/constants/service-filters';
 import type { ServiceCategory, ProjectService, Service } from '@/types';
 
 const statusLabels: Record<string, string> = {
@@ -31,18 +33,6 @@ const statusVariants: Record<string, 'default' | 'secondary' | 'destructive' | '
   in_progress: 'outline',
   connected: 'default',
   error: 'destructive',
-};
-
-const categoryLabels: Partial<Record<ServiceCategory, string>> = {
-  auth: '인증',
-  database: '데이터베이스',
-  deploy: '배포',
-  email: '이메일',
-  payment: '결제',
-  storage: '스토리지',
-  monitoring: '모니터링',
-  ai: 'AI',
-  other: '기타',
 };
 
 export default function ProjectServicesPage() {
@@ -100,14 +90,14 @@ export default function ProjectServicesPage() {
             <AccordionItem key={ps.id} value={ps.id} className="border rounded-lg px-4">
               <AccordionTrigger className="hover:no-underline py-4">
                 <div className="flex items-center gap-3 flex-1 text-left">
-                  <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-sm font-medium shrink-0">
-                    {ps.service?.name?.charAt(0)}
+                  <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                    <ServiceIcon serviceId={ps.service?.slug || ''} size={22} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{ps.service?.name}</span>
                       <Badge variant="secondary" className="text-xs">
-                        {categoryLabels[ps.service?.category as ServiceCategory]}
+                        {allCategoryLabels[ps.service?.category as ServiceCategory]}
                       </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground truncate">
