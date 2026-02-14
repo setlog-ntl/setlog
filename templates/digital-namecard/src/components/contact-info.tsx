@@ -2,19 +2,23 @@
 
 import { Phone, Mail, MapPin, Globe } from 'lucide-react';
 import type { SiteConfig } from '@/lib/config';
+import { useLocale } from '@/lib/i18n';
 
 interface Props {
   config: SiteConfig;
 }
 
 export function ContactInfo({ config }: Props) {
+  const { t, locale } = useLocale();
+  const address = locale === 'en' && config.addressEn ? config.addressEn : config.address;
+
   const items = [
     config.phone
       ? {
           icon: Phone,
           label: config.phone,
           href: `tel:${config.phone.replace(/[^+\d]/g, '')}`,
-          ariaLabel: '전화하기',
+          ariaLabel: t('contact.call'),
         }
       : null,
     config.email
@@ -22,15 +26,15 @@ export function ContactInfo({ config }: Props) {
           icon: Mail,
           label: config.email,
           href: `mailto:${config.email}`,
-          ariaLabel: '이메일 보내기',
+          ariaLabel: t('contact.email'),
         }
       : null,
-    config.address
+    address
       ? {
           icon: MapPin,
-          label: config.address,
-          href: `https://maps.google.com/?q=${encodeURIComponent(config.address)}`,
-          ariaLabel: '지도에서 보기',
+          label: address,
+          href: `https://maps.google.com/?q=${encodeURIComponent(address)}`,
+          ariaLabel: t('contact.map'),
         }
       : null,
     config.website
@@ -38,7 +42,7 @@ export function ContactInfo({ config }: Props) {
           icon: Globe,
           label: config.website.replace(/^https?:\/\//, ''),
           href: config.website,
-          ariaLabel: '웹사이트 방문',
+          ariaLabel: t('contact.website'),
         }
       : null,
   ].filter(Boolean) as Array<{

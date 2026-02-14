@@ -1,4 +1,5 @@
 import { ThemeToggle } from './theme-toggle';
+import { LanguageToggle } from './language-toggle';
 import type { ThemePreset } from '@/lib/themes';
 
 interface Props {
@@ -22,6 +23,7 @@ export function Footer({ theme }: Props) {
           Linkmap
         </a>
       </span>
+      <LanguageToggle theme={theme} />
       <ThemeToggle />
     </footer>
   );

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { ThemeProvider } from 'next-themes';
 import { siteConfig } from '@/lib/config';
+import { LocaleProvider } from '@/lib/i18n';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -52,7 +53,9 @@ export default function RootLayout({
       </head>
       <body className="antialiased bg-gray-50 dark:bg-gray-900">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          {children}
+          <LocaleProvider>
+            {children}
+          </LocaleProvider>
         </ThemeProvider>
       </body>
     </html>

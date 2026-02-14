@@ -1,4 +1,5 @@
 import { ThemeToggle } from './theme-toggle';
+import { LanguageToggle } from './language-toggle';
 
 export function Footer() {
   return (
@@ -14,6 +15,7 @@ export function Footer() {
           Linkmap
         </a>
       </span>
+      <LanguageToggle />
       <ThemeToggle />
     </footer>
   );

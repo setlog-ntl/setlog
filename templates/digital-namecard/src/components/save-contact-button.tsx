@@ -3,12 +3,15 @@
 import { Download } from 'lucide-react';
 import { generateVCard } from '@/lib/vcard';
 import type { SiteConfig } from '@/lib/config';
+import { useLocale } from '@/lib/i18n';
 
 interface Props {
   config: SiteConfig;
 }
 
 export function SaveContactButton({ config }: Props) {
+  const { t } = useLocale();
+
   const handleSave = () => {
     const vcard = generateVCard({
       name: config.name,
@@ -38,7 +41,7 @@ export function SaveContactButton({ config }: Props) {
       style={{ backgroundColor: config.accentColor }}
     >
       <Download className="w-4 h-4" />
-      연락처에 저장
+      {t('save.contact')}
     </button>
   );
 }

@@ -4,6 +4,7 @@ import { useCallback, useRef, useSyncExternalStore } from 'react';
 import { motion } from 'framer-motion';
 import { Github, Linkedin, Mail, Download } from 'lucide-react';
 import type { SiteConfig } from '@/lib/config';
+import { useLocale } from '@/lib/i18n';
 
 interface Props {
   config: SiteConfig;
@@ -71,9 +72,13 @@ function useTypingAnimation(texts: string[], speed = 80, pause = 2000) {
 }
 
 export function HeroSection({ config }: Props) {
-  const taglines = config.tagline.includes('|')
-    ? config.tagline.split('|').map((s) => s.trim())
-    : [config.tagline];
+  const { locale, t } = useLocale();
+  const name = locale === 'en' && config.nameEn ? config.nameEn : config.name;
+  const taglineRaw = locale === 'en' && config.taglineEn ? config.taglineEn : config.tagline;
+
+  const taglines = taglineRaw.includes('|')
+    ? taglineRaw.split('|').map((s) => s.trim())
+    : [taglineRaw];
   const typed = useTypingAnimation(taglines);
 
   return (
@@ -96,7 +101,7 @@ export function HeroSection({ config }: Props) {
           $ whoami
         </p>
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-          {config.name}
+          {name}
         </h1>
         <p className="text-xl text-gray-400 dark:text-gray-400 mb-2 h-8">
           {typed}
@@ -149,7 +154,7 @@ export function HeroSection({ config }: Props) {
             className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 text-white text-sm font-medium hover:opacity-90 transition-opacity"
           >
             <Download className="w-4 h-4" />
-            이력서 다운로드
+            {t('hero.resume')}
           </a>
         )}
       </motion.div>

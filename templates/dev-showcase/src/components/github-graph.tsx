@@ -1,12 +1,15 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useLocale } from '@/lib/i18n';
 
 interface Props {
   username: string;
 }
 
 export function GithubGraph({ username }: Props) {
+  const { t } = useLocale();
+
   return (
     <section className="py-10 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto">
@@ -19,7 +22,7 @@ export function GithubGraph({ username }: Props) {
         >
           <img
             src={`https://ghchart.rshah.org/3b82f6/${username}`}
-            alt={`${username}의 GitHub 기여 그래프`}
+            alt={`${username} ${t('github.alt')}`}
             className="w-full max-w-full"
             loading="lazy"
           />

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import type { LinkItem } from '@/lib/config';
 import type { ThemePreset } from '@/lib/themes';
+import { useLocale } from '@/lib/i18n';
 
 const iconMap: Record<string, LucideIcon> = {
   youtube: Youtube,
@@ -24,10 +25,13 @@ interface Props {
 }
 
 export function LinkList({ links, theme }: Props) {
+  const { locale } = useLocale();
+
   return (
     <div className="w-full flex flex-col gap-3">
       {links.map((link, i) => {
         const Icon = iconMap[link.icon || ''] || ExternalLink;
+        const title = locale === 'en' && link.titleEn ? link.titleEn : link.title;
         return (
           <a
             key={i}
@@ -43,7 +47,7 @@ export function LinkList({ links, theme }: Props) {
           >
             <Icon className="w-5 h-5 shrink-0" />
             <span className="text-sm sm:text-base font-medium flex-1">
-              {link.title}
+              {title}
             </span>
             <ExternalLink className="w-4 h-4 opacity-40 shrink-0" />
           </a>

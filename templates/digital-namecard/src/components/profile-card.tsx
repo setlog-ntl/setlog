@@ -1,13 +1,19 @@
 'use client';
 
 import type { SiteConfig } from '@/lib/config';
+import { useLocale } from '@/lib/i18n';
 
 interface Props {
   config: SiteConfig;
 }
 
 export function ProfileCard({ config }: Props) {
-  const initials = config.name
+  const { locale } = useLocale();
+  const name = locale === 'en' && config.nameEn ? config.nameEn : config.name;
+  const title = locale === 'en' && config.titleEn ? config.titleEn : config.title;
+  const company = locale === 'en' && config.companyEn ? config.companyEn : config.company;
+
+  const initials = name
     .split(' ')
     .map((w) => w[0])
     .join('')
@@ -19,7 +25,7 @@ export function ProfileCard({ config }: Props) {
       {config.avatarUrl ? (
         <img
           src={config.avatarUrl}
-          alt={config.name}
+          alt={name}
           width={80}
           height={80}
           className="w-20 h-20 rounded-full object-cover"
@@ -28,19 +34,19 @@ export function ProfileCard({ config }: Props) {
         <div
           className="w-20 h-20 rounded-full flex items-center justify-center text-xl font-bold text-white"
           style={{ backgroundColor: config.accentColor }}
-          aria-label={config.name}
+          aria-label={name}
         >
           {initials}
         </div>
       )}
       <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">
-        {config.name}
+        {name}
       </h1>
       <p className="text-lg text-gray-600 dark:text-gray-400">
-        {config.title}
+        {title}
       </p>
-      {config.company && (
-        <p className="text-base text-gray-500">{config.company}</p>
+      {company && (
+        <p className="text-base text-gray-500">{company}</p>
       )}
     </div>
   );

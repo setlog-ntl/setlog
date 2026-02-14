@@ -1,17 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useLocale } from '@/lib/i18n';
+import { LanguageToggle } from './language-toggle';
 
-const sections = [
-  { id: 'hero', label: '홈' },
-  { id: 'about', label: '소개' },
-  { id: 'projects', label: '프로젝트' },
-  { id: 'experience', label: '경력' },
-  { id: 'contact', label: '연락처' },
-];
+const sectionIds = ['hero', 'about', 'projects', 'experience', 'contact'];
+
+const sectionKeys: Record<string, string> = {
+  hero: 'nav.home',
+  about: 'nav.about',
+  projects: 'nav.projects',
+  experience: 'nav.experience',
+  contact: 'nav.contact',
+};
 
 export function NavHeader() {
   const [active, setActive] = useState('hero');
+  const { t } = useLocale();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -25,7 +30,7 @@ export function NavHeader() {
       { rootMargin: '-50% 0px -50% 0px' }
     );
 
-    sections.forEach(({ id }) => {
+    sectionIds.forEach((id) => {
       const el = document.getElementById(id);
       if (el) observer.observe(el);
     });
@@ -36,7 +41,7 @@ export function NavHeader() {
   return (
     <header className="fixed top-0 w-full z-50 backdrop-blur-md bg-gray-950/80 dark:bg-gray-950/80 border-b border-gray-800/50">
       <nav className="max-w-4xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-center gap-1">
-        {sections.map(({ id, label }) => (
+        {sectionIds.map((id) => (
           <a
             key={id}
             href={`#${id}`}
@@ -46,9 +51,10 @@ export function NavHeader() {
                 : 'text-gray-400 hover:text-gray-200'
             }`}
           >
-            {label}
+            {t(sectionKeys[id])}
           </a>
         ))}
+        <LanguageToggle />
       </nav>
     </header>
   );

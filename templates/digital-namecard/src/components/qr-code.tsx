@@ -3,12 +3,14 @@
 import { QRCodeSVG } from 'qrcode.react';
 import { generateVCard } from '@/lib/vcard';
 import type { SiteConfig } from '@/lib/config';
+import { useLocale } from '@/lib/i18n';
 
 interface Props {
   config: SiteConfig;
 }
 
 export function QrCode({ config }: Props) {
+  const { t } = useLocale();
   const vcard = generateVCard({
     name: config.name,
     title: config.title,
@@ -31,7 +33,7 @@ export function QrCode({ config }: Props) {
         />
       </div>
       <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
-        QR 코드를 스캔하면 연락처가 저장됩니다
+        {t('qr.hint')}
       </p>
     </div>
   );

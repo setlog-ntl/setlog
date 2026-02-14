@@ -3,12 +3,15 @@
 import { motion } from 'framer-motion';
 import { Mail, Github, Linkedin } from 'lucide-react';
 import type { SiteConfig } from '@/lib/config';
+import { useLocale } from '@/lib/i18n';
 
 interface Props {
   config: SiteConfig;
 }
 
 export function ContactSection({ config }: Props) {
+  const { t } = useLocale();
+
   return (
     <section id="contact" className="py-20 sm:py-24 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto text-center">
@@ -19,7 +22,7 @@ export function ContactSection({ config }: Props) {
           viewport={{ once: true, amount: 0.2 }}
           transition={{ duration: 0.5 }}
         >
-          함께 일하고 싶다면
+          {t('contact.title')}
         </motion.h2>
 
         <motion.p
@@ -29,7 +32,7 @@ export function ContactSection({ config }: Props) {
           viewport={{ once: true, amount: 0.2 }}
           transition={{ duration: 0.5, delay: 0.1 }}
         >
-          새로운 프로젝트나 협업 제안은 언제든 환영합니다.
+          {t('contact.desc')}
         </motion.p>
 
         <motion.div
@@ -45,7 +48,7 @@ export function ContactSection({ config }: Props) {
               className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white font-medium hover:opacity-90 transition-opacity"
             >
               <Mail className="w-4 h-4" />
-              이메일 보내기
+              {t('contact.email')}
             </a>
           )}
           {config.githubUsername && (
