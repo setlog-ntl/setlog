@@ -11,8 +11,12 @@ import {
   X,
   Maximize2,
   Minimize2,
+  Rocket,
+  FileText,
+  FilePlus2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useLocaleStore } from '@/stores/locale-store';
 
 interface ChatMessage {
@@ -20,25 +24,80 @@ interface ChatMessage {
   content: string;
 }
 
+export interface CodeBlock {
+  filePath: string;
+  code: string;
+  lang: string;
+  isNew: boolean;
+}
+
 interface ChatTerminalProps {
   fileContent: string;
   filePath: string | null;
+  allFiles: string[];
   onApplyCode: (code: string) => void;
+  onApplyFiles: (blocks: CodeBlock[]) => Promise<void>;
 }
 
-function extractCodeBlock(text: string): string | null {
-  // 코드 블록 추출 (```html, ```css, ```js 등)
-  const match = text.match(/```[\w]*\n([\s\S]*?)```/);
-  return match ? match[1].trim() : null;
+/**
+ * 다중 파일 코드블록 파싱
+ * 포맷: 📄 filename.html\n```html\n...code...\n```
+ * 하위호환: 📄 없이 코드블록만 있으면 현재 파일에 적용
+ */
+function extractCodeBlocks(text: string, currentFilePath: string | null, allFiles: string[]): CodeBlock[] {
+  const blocks: CodeBlock[] = [];
+
+  // 📄 파일경로 + 코드블록 패턴
+  const multiPattern = /📄\s*([^\n]+)\n```(\w*)\n([\s\S]*?)```/g;
+  let match;
+  while ((match = multiPattern.exec(text)) !== null) {
+    const filePath = match[1].trim();
+    const lang = match[2] || 'html';
+    const code = match[3].trim();
+    const isNew = !allFiles.includes(filePath);
+    blocks.push({ filePath, code, lang, isNew });
+  }
+
+  // 하위호환: 📄 없이 코드블록만 있는 경우
+  if (blocks.length === 0) {
+    const singlePattern = /```(\w*)\n([\s\S]*?)```/g;
+    let singleMatch;
+    while ((singleMatch = singlePattern.exec(text)) !== null) {
+      const lang = singleMatch[1] || 'html';
+      const code = singleMatch[2].trim();
+      if (code && currentFilePath) {
+        blocks.push({
+          filePath: currentFilePath,
+          code,
+          lang,
+          isNew: false,
+        });
+      }
+    }
+  }
+
+  return blocks;
 }
 
-export function ChatTerminal({ fileContent, filePath, onApplyCode }: ChatTerminalProps) {
+function hasCodeBlock(content: string): boolean {
+  return /```[\w]*\n[\s\S]*?```/.test(content);
+}
+
+export function ChatTerminal({
+  fileContent,
+  filePath,
+  allFiles,
+  onApplyCode,
+  onApplyFiles,
+}: ChatTerminalProps) {
   const { locale } = useLocaleStore();
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [applyingIndex, setApplyingIndex] = useState<number | null>(null);
+  const [applyingAll, setApplyingAll] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -70,6 +129,7 @@ export function ChatTerminal({ fileContent, filePath, onApplyCode }: ChatTermina
           messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
           fileContent,
           filePath,
+          allFiles,
         }),
       });
 
@@ -91,7 +151,7 @@ export function ChatTerminal({ fileContent, filePath, onApplyCode }: ChatTermina
     } finally {
       setIsLoading(false);
     }
-  }, [input, messages, isLoading, fileContent, filePath]);
+  }, [input, messages, isLoading, fileContent, filePath, allFiles]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -100,16 +160,146 @@ export function ChatTerminal({ fileContent, filePath, onApplyCode }: ChatTermina
     }
   };
 
-  const handleApply = (content: string) => {
-    const code = extractCodeBlock(content);
-    if (code) {
-      onApplyCode(code);
+  // 단일 코드블록 적용 (현재 파일에만)
+  const handleApplySingle = (content: string) => {
+    const blocks = extractCodeBlocks(content, filePath, allFiles);
+    if (blocks.length === 1 && !blocks[0].isNew && blocks[0].filePath === filePath) {
+      onApplyCode(blocks[0].code);
     }
   };
 
-  const hasCodeBlock = (content: string) => /```[\w]*\n[\s\S]*?```/.test(content);
+  // 전체 적용 & 배포
+  const handleApplyAll = useCallback(
+    async (content: string) => {
+      const blocks = extractCodeBlocks(content, filePath, allFiles);
+      if (blocks.length === 0) return;
+
+      setApplyingAll(true);
+      try {
+        await onApplyFiles(blocks);
+      } finally {
+        setApplyingAll(false);
+      }
+    },
+    [filePath, allFiles, onApplyFiles]
+  );
+
+  // 개별 파일 적용
+  const handleApplyOne = useCallback(
+    async (content: string, index: number) => {
+      const blocks = extractCodeBlocks(content, filePath, allFiles);
+      const block = blocks[index];
+      if (!block) return;
+
+      setApplyingIndex(index);
+      try {
+        if (!block.isNew && block.filePath === filePath) {
+          onApplyCode(block.code);
+        } else {
+          await onApplyFiles([block]);
+        }
+      } finally {
+        setApplyingIndex(null);
+      }
+    },
+    [filePath, allFiles, onApplyCode, onApplyFiles]
+  );
 
   const terminalHeight = isExpanded ? 'h-[60vh]' : 'h-72';
+
+  // 메시지 내 코드블록 렌더링
+  const renderAssistantMessage = (msg: ChatMessage, msgIndex: number) => {
+    const blocks = extractCodeBlocks(msg.content, filePath, allFiles);
+    const hasBlocks = blocks.length > 0;
+    const isMulti = blocks.length > 1 || (blocks.length === 1 && blocks[0].isNew);
+
+    // 코드블록 없는 텍스트 부분 추출
+    const textParts = msg.content
+      .replace(/📄\s*[^\n]+\n```\w*\n[\s\S]*?```/g, '')
+      .replace(/```\w*\n[\s\S]*?```/g, '')
+      .trim();
+
+    return (
+      <div className="space-y-2">
+        {/* 설명 텍스트 */}
+        {textParts && (
+          <div className="text-zinc-300 whitespace-pre-wrap break-all text-xs leading-relaxed pl-4 border-l-2 border-zinc-800">
+            {textParts}
+          </div>
+        )}
+
+        {/* 코드블록들 */}
+        {blocks.map((block, i) => (
+          <div key={i} className="ml-4 border border-zinc-800 rounded overflow-hidden">
+            {/* 파일 헤더 */}
+            <div className="flex items-center justify-between px-2 py-1 bg-zinc-800/50 text-[11px]">
+              <div className="flex items-center gap-1.5">
+                {block.isNew ? (
+                  <FilePlus2 className="h-3 w-3 text-emerald-400" />
+                ) : (
+                  <FileText className="h-3 w-3 text-zinc-400" />
+                )}
+                <span className="text-zinc-300 font-mono">{block.filePath}</span>
+                {block.isNew && (
+                  <Badge variant="default" className="text-[9px] px-1 py-0 h-4 bg-emerald-600">
+                    {locale === 'ko' ? '신규' : 'NEW'}
+                  </Badge>
+                )}
+              </div>
+              <button
+                onClick={() => handleApplyOne(msg.content, i)}
+                disabled={applyingIndex === i || applyingAll}
+                className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 transition-colors disabled:opacity-50"
+              >
+                {applyingIndex === i ? (
+                  <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                ) : (
+                  <Check className="h-2.5 w-2.5" />
+                )}
+                {locale === 'ko' ? '적용' : 'Apply'}
+              </button>
+            </div>
+            {/* 코드 미리보기 (축약) */}
+            <pre className="px-2 py-1.5 text-[11px] text-zinc-400 overflow-x-auto max-h-32 leading-relaxed">
+              {block.code.split('\n').slice(0, 8).join('\n')}
+              {block.code.split('\n').length > 8 && (
+                <span className="text-zinc-600">{`\n... (${block.code.split('\n').length}줄)`}</span>
+              )}
+            </pre>
+          </div>
+        ))}
+
+        {/* 전체 적용 & 배포 버튼 */}
+        {hasBlocks && (
+          <div className="ml-4 flex gap-2">
+            {!isMulti && !blocks[0].isNew && (
+              <button
+                onClick={() => handleApplySingle(msg.content)}
+                className="flex items-center gap-1.5 px-2 py-1 rounded text-[11px] font-medium bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 transition-colors"
+              >
+                <Check className="h-3 w-3" />
+                {locale === 'ko' ? '코드 적용' : 'Apply Code'}
+              </button>
+            )}
+            <button
+              onClick={() => handleApplyAll(msg.content)}
+              disabled={applyingAll}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-medium bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 transition-colors disabled:opacity-50"
+            >
+              {applyingAll ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Rocket className="h-3 w-3" />
+              )}
+              {locale === 'ko'
+                ? applyingAll ? '적용 & 배포 중...' : '전체 적용 & 배포'
+                : applyingAll ? 'Applying...' : 'Apply All & Deploy'}
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="border-t bg-background flex flex-col">
@@ -173,13 +363,13 @@ export function ChatTerminal({ fileContent, filePath, onApplyCode }: ChatTermina
               <div className="text-zinc-600 text-xs space-y-1 py-4">
                 <p>
                   {locale === 'ko'
-                    ? '💡 현재 파일의 코드를 AI에게 수정 요청할 수 있습니다.'
-                    : '💡 Ask AI to modify the code in your current file.'}
+                    ? '💡 AI에게 코드 수정이나 새 페이지 생성을 요청할 수 있습니다.'
+                    : '💡 Ask AI to modify code or create new pages.'}
                 </p>
                 <p className="text-zinc-700">
                   {locale === 'ko'
-                    ? '예: "배경색을 파란색으로 바꿔줘", "헤더에 로고 추가해줘"'
-                    : 'e.g., "Change background to blue", "Add a logo to the header"'}
+                    ? '예: "배경색을 파란색으로 바꿔줘", "about 페이지 추가해줘"'
+                    : 'e.g., "Change background to blue", "Add an about page"'}
                 </p>
               </div>
             )}
@@ -192,20 +382,13 @@ export function ChatTerminal({ fileContent, filePath, onApplyCode }: ChatTermina
                     <span className="text-zinc-200 break-all">{msg.content}</span>
                   </div>
                 ) : (
-                  <div className="space-y-1.5">
-                    <div className="text-zinc-300 whitespace-pre-wrap break-all text-xs leading-relaxed pl-4 border-l-2 border-zinc-800">
-                      {msg.content}
-                    </div>
-                    {hasCodeBlock(msg.content) && (
-                      <button
-                        onClick={() => handleApply(msg.content)}
-                        className="flex items-center gap-1.5 ml-4 px-2 py-1 rounded text-[11px] font-medium bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 transition-colors"
-                      >
-                        <Check className="h-3 w-3" />
-                        {locale === 'ko' ? '코드 적용' : 'Apply Code'}
-                      </button>
-                    )}
-                  </div>
+                  hasCodeBlock(msg.content)
+                    ? renderAssistantMessage(msg, i)
+                    : (
+                      <div className="text-zinc-300 whitespace-pre-wrap break-all text-xs leading-relaxed pl-4 border-l-2 border-zinc-800">
+                        {msg.content}
+                      </div>
+                    )
                 )}
               </div>
             ))}
@@ -231,8 +414,8 @@ export function ChatTerminal({ fileContent, filePath, onApplyCode }: ChatTermina
               onKeyDown={handleKeyDown}
               placeholder={
                 locale === 'ko'
-                  ? '코드 수정 요청을 입력하세요...'
-                  : 'Type a code modification request...'
+                  ? '코드 수정 또는 새 페이지 생성 요청...'
+                  : 'Modify code or create new pages...'
               }
               disabled={isLoading}
               className="flex-1 bg-transparent text-zinc-200 font-mono text-sm placeholder:text-zinc-600 focus:outline-none disabled:opacity-50"

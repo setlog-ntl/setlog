@@ -141,6 +141,7 @@ export async function PUT(
   }
 
   const { path, content, sha, message } = parsed.data;
+  const isNewFile = !sha;
 
   const result = await getDeployWithToken(supabase, id, user.id);
   if (!result) return notFoundError('배포');
@@ -148,24 +149,29 @@ export async function PUT(
   const { deploy, token, owner, repo } = result;
 
   try {
+    const defaultMessage = isNewFile
+      ? `Linkmap AI: ${path} 생성`
+      : `Linkmap 편집기로 ${path} 수정`;
+
     const commitResult = await createOrUpdateFileContent(
       token,
       owner,
       repo,
       path,
       content,
-      message || `Linkmap 편집기로 ${path} 수정`,
+      message || defaultMessage,
       sha
     );
 
     await logAudit(user.id, {
-      action: 'oneclick.file_edit',
+      action: isNewFile ? 'oneclick.file_create' : 'oneclick.file_edit',
       resourceType: 'homepage_deploy',
       resourceId: deploy.id,
       details: {
         site_name: deploy.site_name,
         file_path: path,
         commit_sha: commitResult.commit.sha,
+        is_new_file: isNewFile,
       },
     });
 

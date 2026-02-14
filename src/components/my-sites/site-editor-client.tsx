@@ -24,11 +24,12 @@ import {
   useDeployFiles,
   useFileContent,
   useUpdateFile,
+  useBatchApplyFiles,
   useMyDeployments,
 } from '@/lib/queries/oneclick';
 import { toast } from 'sonner';
 import Link from 'next/link';
-import { ChatTerminal } from './chat-terminal';
+import { ChatTerminal, type CodeBlock } from './chat-terminal';
 
 interface SiteEditorClientProps {
   deployId: string;
@@ -52,6 +53,7 @@ export function SiteEditorClient({ deployId }: SiteEditorClientProps) {
   const { data: files, isLoading: filesLoading } = useDeployFiles(deployId);
   const { data: deployments } = useMyDeployments();
   const updateFile = useUpdateFile();
+  const batchApply = useBatchApplyFiles();
 
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [editorContent, setEditorContent] = useState('');
@@ -256,6 +258,115 @@ export function SiteEditorClient({ deployId }: SiteEditorClientProps) {
       toast.error(err instanceof Error ? err.message : '배포 실패');
     }
   }, [selectedPath, fileDetail, hasUnsavedChanges, editorContent, deployId, updateFile, locale, liveUrl]);
+
+  // 파일 경로 목록 + SHA 맵 (ChatTerminal에 전달)
+  const allFilePaths = useMemo(() => {
+    return files?.map((f) => f.path) || [];
+  }, [files]);
+
+  const filesShaMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    if (files) {
+      for (const f of files) {
+        map[f.path] = f.sha;
+      }
+    }
+    return map;
+  }, [files]);
+
+  // AI 코드 적용 + 자동 배포
+  const handleApplyFiles = useCallback(async (blocks: CodeBlock[]) => {
+    try {
+      setDeployState('saving');
+
+      // 1. 각 파일 저장 (배치)
+      const filesToSave = blocks.map((block) => ({
+        path: block.filePath,
+        content: block.code,
+        sha: block.isNew ? undefined : filesShaMap[block.filePath],
+      }));
+
+      const { results } = await batchApply.mutateAsync({
+        deployId,
+        files: filesToSave,
+      });
+
+      // 현재 편집 중인 파일이 포함되어 있으면 에디터 갱신
+      for (const block of blocks) {
+        if (block.filePath === selectedPath) {
+          setEditorContent(block.code);
+          setHasUnsavedChanges(false);
+        }
+      }
+
+      // SHA 맵 업데이트 (fileDetail이 있을 때)
+      if (fileDetail) {
+        const match = results.find((r) => r.path === fileDetail.path);
+        if (match) {
+          fileDetail.sha = match.sha;
+        }
+      }
+
+      toast.success(
+        locale === 'ko'
+          ? `${results.length}개 파일 저장 완료`
+          : `${results.length} file(s) saved`
+      );
+
+      // 2. 자동 배포 트리거
+      setDeployState('deploying');
+      toast.info(
+        locale === 'ko'
+          ? 'GitHub Pages 배포 중... 약 30초 소요됩니다.'
+          : 'Deploying to GitHub Pages... ~30 seconds.'
+      );
+
+      if (liveUrl) {
+        let attempts = 0;
+        const maxAttempts = 12;
+        const checkInterval = 5000;
+
+        await new Promise<void>((resolve) => {
+          const poll = setInterval(async () => {
+            attempts++;
+            try {
+              await fetch(`${liveUrl}?_t=${Date.now()}`, {
+                method: 'HEAD',
+                mode: 'no-cors',
+              });
+              if (attempts >= 6) {
+                clearInterval(poll);
+                resolve();
+              }
+            } catch {
+              // ignore
+            }
+            if (attempts >= maxAttempts) {
+              clearInterval(poll);
+              resolve();
+            }
+          }, checkInterval);
+        });
+      } else {
+        await new Promise((r) => setTimeout(r, 30000));
+      }
+
+      setDeployState('deployed');
+      setLivePreviewKey((k) => k + 1);
+      setShowLiveAfterDeploy(true);
+
+      toast.success(
+        locale === 'ko'
+          ? '배포 완료! 사이트에 변경사항이 반영되었습니다.'
+          : 'Deployed! Changes are now live.'
+      );
+
+      setTimeout(() => setDeployState('idle'), 3000);
+    } catch (err) {
+      setDeployState('idle');
+      toast.error(err instanceof Error ? err.message : '적용 실패');
+    }
+  }, [batchApply, deployId, selectedPath, fileDetail, filesShaMap, liveUrl, locale]);
 
   // Ctrl+S 단축키
   useEffect(() => {
@@ -641,9 +752,11 @@ export function SiteEditorClient({ deployId }: SiteEditorClientProps) {
       <ChatTerminal
         fileContent={editorContent}
         filePath={selectedPath}
+        allFiles={allFilePaths}
         onApplyCode={(code) => {
           handleContentChange(code);
         }}
+        onApplyFiles={handleApplyFiles}
       />
 
       {/* ===== 상태 바 ===== */}

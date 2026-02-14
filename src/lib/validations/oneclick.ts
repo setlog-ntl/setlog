@@ -38,7 +38,7 @@ export const fileUpdateSchema = z.object({
     .min(1, '파일 경로는 필수입니다')
     .refine((val) => !val.includes('..'), '잘못된 파일 경로입니다'),
   content: z.string(),
-  sha: z.string().min(1, 'SHA는 필수입니다'),
+  sha: z.string().optional(), // 없으면 새 파일 생성
   message: z.string().max(200).optional(),
 });
 

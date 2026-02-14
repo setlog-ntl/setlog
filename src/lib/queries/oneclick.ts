@@ -267,18 +267,20 @@ export function useUpdateFile() {
       deployId: string;
       path: string;
       content: string;
-      sha: string;
+      sha?: string;
       message?: string;
     }): Promise<{ sha: string }> => {
+      const body: Record<string, string> = {
+        path: input.path,
+        content: input.content,
+      };
+      if (input.sha) body.sha = input.sha;
+      if (input.message) body.message = input.message;
+
       const res = await fetch(`/api/oneclick/deployments/${input.deployId}/files`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          path: input.path,
-          content: input.content,
-          sha: input.sha,
-          message: input.message,
-        }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -293,6 +295,59 @@ export function useUpdateFile() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.oneclick.files(variables.deployId),
       });
+    },
+  });
+}
+
+// ---------- Batch Apply Files ----------
+
+export interface BatchFileInput {
+  path: string;
+  content: string;
+  sha?: string;
+}
+
+export function useBatchApplyFiles() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      deployId: string;
+      files: BatchFileInput[];
+    }): Promise<{ results: Array<{ path: string; sha: string }> }> => {
+      const results: Array<{ path: string; sha: string }> = [];
+      for (const file of input.files) {
+        const body: Record<string, string> = {
+          path: file.path,
+          content: file.content,
+        };
+        if (file.sha) body.sha = file.sha;
+        body.message = file.sha
+          ? `Linkmap AI: ${file.path} 수정`
+          : `Linkmap AI: ${file.path} 생성`;
+
+        const res = await fetch(`/api/oneclick/deployments/${input.deployId}/files`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || `${file.path} 저장 실패`);
+        }
+        const result = await res.json();
+        results.push({ path: file.path, sha: result.sha });
+      }
+      return { results };
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.oneclick.files(variables.deployId),
+      });
+      for (const file of variables.files) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.oneclick.fileContent(variables.deployId, file.path),
+        });
+      }
     },
   });
 }

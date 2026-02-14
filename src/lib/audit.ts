@@ -29,7 +29,8 @@ export type AuditAction =
   | 'admin.setup_templates'
   | 'admin.ai_config_update'
   | 'oneclick.deploy_delete'
-  | 'oneclick.file_edit';
+  | 'oneclick.file_edit'
+  | 'oneclick.file_create';
 
 interface AuditLogEntry {
   action: AuditAction;
